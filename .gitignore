@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.env
+.cache/
+*.cache
+*.log
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+*.o
+*.pyc
+build/
+temp/
+.DS_Store
+Thumbs.db
+
