@@ -1,12 +1,19 @@
-import express from 'express';
+import express, { Express } from 'express';
+import userRoutes from './ui/routes/userRoutes';
+import recipientRoutes from './ui/routes/recipientRoutes';
+import orderRoutes from './ui/routes/orderRoutes';
+import deliverymanRoutes from './ui/routes/deliverymanRoutes';
+import authRoutes from './ui/routes/authRoutes';
 
-const app = express();
-const port = 3000;
+export function createApp(): Express {
+  const app = express();
+  app.use(express.json());
 
-app.get('/', (req, res) => {
-  res.send('Hello FastFeet');
-});
+  app.use(userRoutes);
+  app.use(recipientRoutes);
+  app.use(orderRoutes);
+  app.use(deliverymanRoutes);
+  app.use(authRoutes);
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+  return app;
+}
