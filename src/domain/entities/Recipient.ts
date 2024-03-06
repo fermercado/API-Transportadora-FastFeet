@@ -12,7 +12,10 @@ export class Recipient {
   id!: string;
 
   @Column()
-  name!: string;
+  firstName!: string;
+
+  @Column()
+  lastName!: string;
 
   @Column()
   street!: string;
@@ -24,6 +27,9 @@ export class Recipient {
   complement?: string;
 
   @Column()
+  neighborhood!: string;
+
+  @Column()
   city!: string;
 
   @Column()
@@ -31,6 +37,12 @@ export class Recipient {
 
   @Column()
   zipCode!: string;
+
+  @Column()
+  email!: string;
+
+  @Column()
+  cpf!: string;
 
   @CreateDateColumn()
   createdAt!: Date;
