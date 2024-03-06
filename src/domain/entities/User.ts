@@ -18,10 +18,13 @@ export class User {
   password!: string;
 
   @Column()
-  type!: 'admin' | 'deliveryman';
+  role!: 'admin' | 'deliveryman';
 
   @Column()
-  name!: string;
+  firstName!: string;
+
+  @Column()
+  lastName!: string;
 
   @Column({ nullable: true })
   email?: string;
