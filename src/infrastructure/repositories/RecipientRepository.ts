@@ -11,13 +11,27 @@ export class RecipientRepository implements IRecipientRepository {
     this.ormRepository = this.dataSource.getRepository(Recipient);
   }
 
-  public async create(recipientData: Partial<Recipient>): Promise<Recipient> {
-    const recipient = this.ormRepository.create(recipientData);
-    return this.ormRepository.save(recipient);
+  public async findByEmail(email: string): Promise<Recipient | undefined> {
+    const recipient = await this.ormRepository.findOneBy({ email });
+    return recipient ?? undefined;
+  }
+
+  public async findByCpf(cpf: string): Promise<Recipient | undefined> {
+    const recipient = await this.ormRepository.findOneBy({ cpf });
+    return recipient ?? undefined;
   }
 
   public async find(): Promise<Recipient[]> {
     return this.ormRepository.find();
+  }
+
+  public async findAll(): Promise<Recipient[]> {
+    return this.ormRepository.find();
+  }
+
+  public async create(recipientData: Partial<Recipient>): Promise<Recipient> {
+    const recipient = this.ormRepository.create(recipientData);
+    return this.ormRepository.save(recipient);
   }
 
   public async findById(id: string): Promise<Recipient | undefined> {
@@ -36,5 +50,17 @@ export class RecipientRepository implements IRecipientRepository {
 
   public async remove(recipient: Recipient): Promise<void> {
     await this.ormRepository.remove(recipient);
+  }
+
+  public async update(
+    id: string,
+    recipientData: Partial<Recipient>,
+  ): Promise<Recipient> {
+    let recipient = await this.ormRepository.findOneBy({ id });
+    if (!recipient) {
+      throw new Error(`Recipient with id ${id} not found`);
+    }
+    recipient = this.ormRepository.merge(recipient, recipientData);
+    return this.ormRepository.save(recipient);
   }
 }
