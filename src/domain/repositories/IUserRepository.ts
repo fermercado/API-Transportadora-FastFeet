@@ -3,8 +3,10 @@ import { User } from '../entities/User';
 export interface IUserRepository {
   create(userData: Partial<User>): Promise<User>;
   findById(id: string): Promise<User | undefined>;
-  find(): Promise<User[]>;
   findByCpf(cpf: string): Promise<User | undefined>;
+  findByEmail(email: string): Promise<User | undefined>;
+  update(id: string, userData: Partial<User>): Promise<User>;
+  findAll(): Promise<User[]>;
   save(user: User): Promise<User>;
-  remove(user: User): Promise<void>;
+  remove(id: string): Promise<void>;
 }
