@@ -25,10 +25,6 @@ export class UserRepository implements IUserRepository {
     return this.ormRepository.save(user);
   }
 
-  public async find(): Promise<User[]> {
-    return this.ormRepository.find();
-  }
-
   public async findById(id: string): Promise<User | undefined> {
     const user = await this.ormRepository.findOneBy({ id });
     return user ?? undefined;
