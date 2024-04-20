@@ -1,16 +1,16 @@
 import { inject, injectable } from 'tsyringe';
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
 import { User, UserWithoutPassword } from '../../domain/entities/User';
-import bcrypt from 'bcrypt';
 import UserValidationService from '../validation/UserValidationService';
 import { CreateUserDto } from '../dtos/user/CreateUserDto';
 import { UpdateUserDto } from '../dtos/user/UpdateUserDto';
+import bcrypt from 'bcrypt';
 
 @injectable()
 export class UserService {
   constructor(
     @inject('IUserRepository') private userRepository: IUserRepository,
-    @inject(UserValidationService)
+    @inject('UserValidationService')
     private userValidationService: UserValidationService,
   ) {}
 
@@ -18,10 +18,8 @@ export class UserService {
     userData: CreateUserDto,
   ): Promise<UserWithoutPassword> {
     await this.userValidationService.validateCreationData(userData);
-    const hashedPassword = await bcrypt.hash(userData.password, 10);
     const userToSave: Partial<User> = {
       ...userData,
-      password: hashedPassword,
     };
     const savedUser = await this.userRepository.create(userToSave);
     return this.omitPassword(savedUser);
@@ -32,21 +30,20 @@ export class UserService {
     userData: UpdateUserDto,
   ): Promise<UserWithoutPassword> {
     await this.userValidationService.validateUpdateData(id, userData);
-    if (userData.password) {
-      userData.password = await bcrypt.hash(userData.password, 10);
-    }
     const { confirmPassword, ...updateData } = userData;
     const updatedUser = await this.userRepository.update(id, updateData);
     return this.omitPassword(updatedUser);
   }
 
   public async deleteUser(id: string): Promise<void> {
+    await this.userValidationService.validateUserExistence(id);
     await this.userRepository.remove(id);
   }
 
   public async findUserById(
     id: string,
   ): Promise<UserWithoutPassword | undefined> {
+    await this.userValidationService.validateUserExistence(id);
     const user = await this.userRepository.findById(id);
     if (!user) return undefined;
     return this.omitPassword(user);
