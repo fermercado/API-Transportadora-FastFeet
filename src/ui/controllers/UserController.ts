@@ -1,6 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
 import { UserService } from '../../application/services/UserService';
+import { ApplicationError } from '../../shared/errors/ApplicationError';
 
 @injectable()
 export class UserController {
@@ -11,12 +12,15 @@ export class UserController {
     res: Response,
     next: NextFunction,
   ): Promise<void> {
-    console.log(req.body);
     try {
       const user = await this.userService.createUser(req.body);
       res.status(201).json(user);
     } catch (error) {
-      next(error);
+      if (error instanceof ApplicationError) {
+        next(error);
+      } else {
+        next(new ApplicationError('Failed to create user', 500));
+      }
     }
   }
 
@@ -29,7 +33,11 @@ export class UserController {
       const user = await this.userService.updateUser(req.params.id, req.body);
       res.status(200).json(user);
     } catch (error) {
-      next(error);
+      if (error instanceof ApplicationError) {
+        next(error);
+      } else {
+        next(new ApplicationError('Failed to update user', 500));
+      }
     }
   }
 
@@ -42,7 +50,11 @@ export class UserController {
       await this.userService.deleteUser(req.params.id);
       res.status(204).send();
     } catch (error) {
-      next(error);
+      if (error instanceof ApplicationError) {
+        next(error);
+      } else {
+        next(new ApplicationError('Failed to delete user', 500));
+      }
     }
   }
 
@@ -54,12 +66,15 @@ export class UserController {
     try {
       const user = await this.userService.findUserById(req.params.id);
       if (!user) {
-        res.status(404).json({ message: 'User not found' });
-        return;
+        throw new ApplicationError('User not found', 404);
       }
       res.status(200).json(user);
     } catch (error) {
-      next(error);
+      if (error instanceof ApplicationError) {
+        next(error);
+      } else {
+        next(new ApplicationError('Failed to retrieve user', 500));
+      }
     }
   }
 
@@ -72,7 +87,11 @@ export class UserController {
       const users = await this.userService.listUsers();
       res.status(200).json(users);
     } catch (error) {
-      next(error);
+      if (error instanceof ApplicationError) {
+        next(error);
+      } else {
+        next(new ApplicationError('Failed to list users', 500));
+      }
     }
   }
 }

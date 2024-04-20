@@ -5,20 +5,28 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { UserRole } from '../enums/UserRole';
+import { IsEmail, IsEnum, IsUUID } from 'class-validator';
 
 @Entity('users')
 export class User {
+  @IsUUID()
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ unique: true })
   cpf!: string;
 
   @Column()
   password!: string;
 
-  @Column()
-  role!: 'admin' | 'deliveryman';
+  @IsEnum(UserRole)
+  @Column({
+    type: 'enum',
+    enum: UserRole,
+    default: UserRole.Deliveryman,
+  })
+  role!: UserRole;
 
   @Column()
   firstName!: string;
@@ -26,8 +34,9 @@ export class User {
   @Column()
   lastName!: string;
 
-  @Column({ nullable: true })
-  email?: string;
+  @IsEmail()
+  @Column({ nullable: true, unique: true })
+  email!: string;
 
   @CreateDateColumn()
   createdAt!: Date;

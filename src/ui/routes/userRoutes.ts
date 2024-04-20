@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { container } from 'tsyringe';
 import { UserController } from '../controllers/UserController';
 import { validateRequest } from '../../ui/middleware/validateRequest';
-import UserValidator from '../../domain/validators/UserValidator';
+import { UserValidator } from '../../domain/validators/UserValidator';
 import { adminOnlyMiddleware } from '../../infrastructure/security/adminOnlyMiddleware';
 import { AuthMiddleware } from '../../infrastructure/security/AuthMiddleware';
 
