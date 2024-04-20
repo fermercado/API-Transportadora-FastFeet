@@ -1,13 +1,11 @@
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
-import UserValidator from '../../domain/validators/UserValidator';
+import { UserValidator } from '../../domain/validators/UserValidator';
 import { ApplicationError } from '../../shared/errors/ApplicationError';
 import { inject, injectable } from 'tsyringe';
+import bcrypt from 'bcrypt';
 
 @injectable()
-class UserValidationService {
-  validateUserExistence(id: string) {
-    throw new Error('Method not implemented.');
-  }
+export class UserValidationService {
   constructor(
     @inject('IUserRepository') private userRepository: IUserRepository,
   ) {}
@@ -31,13 +29,9 @@ class UserValidationService {
         })),
       );
     }
-
-    if (userData.password !== userData.confirmPassword) {
-      throw new ApplicationError('Validation failed', 400, true, [
-        { field: 'confirmPassword', message: "Passwords don't match" },
-      ]);
+    if (userData.password) {
+      userData.password = await bcrypt.hash(userData.password, 10);
     }
-
     await this.validateCpfAndEmailUniqueness(userData.cpf, userData.email);
   }
 
@@ -64,14 +58,16 @@ class UserValidationService {
       );
     }
 
-    if (
-      userData.password &&
-      userData.confirmPassword &&
-      userData.password !== userData.confirmPassword
-    ) {
-      throw new ApplicationError('Validation failed', 400, true, [
-        { field: 'confirmPassword', message: "Passwords don't match" },
-      ]);
+    if (userData.password) {
+      if (
+        userData.confirmPassword &&
+        userData.password !== userData.confirmPassword
+      ) {
+        throw new ApplicationError('Validation failed', 400, true, [
+          { field: 'confirmPassword', message: "Passwords don't match" },
+        ]);
+      }
+      userData.password = await bcrypt.hash(userData.password, 10);
     }
 
     await this.validateCpfAndEmailUniqueness(userData.cpf, userData.email, id);
@@ -114,6 +110,15 @@ class UserValidationService {
           ],
         );
       }
+    }
+  }
+
+  async validateUserExistence(id: string): Promise<void> {
+    const user = await this.userRepository.findById(id);
+    if (!user) {
+      throw new ApplicationError('User not found', 404, true, [
+        { field: 'id', message: 'No user found with the provided ID.' },
+      ]);
     }
   }
 }
