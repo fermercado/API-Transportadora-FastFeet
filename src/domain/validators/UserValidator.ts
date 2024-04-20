@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import CommonValidations from './commonValidations';
+import { CommonValidations } from './commonValidations';
 
 export class UserValidator {
   static createBaseSchema() {
@@ -27,6 +27,23 @@ export class UserValidator {
   public static get validateUpdateUser() {
     return UserValidator.createBaseSchema()
       .partial()
+      .extend({
+        confirmPassword: z.string().optional(),
+      })
+      .refine(
+        (data) => {
+          if (data.password) {
+            return (
+              data.confirmPassword && data.password === data.confirmPassword
+            );
+          }
+          return true;
+        },
+        {
+          message: "Passwords don't match",
+          path: ['confirmPassword'],
+        },
+      )
       .refine(
         (data) => {
           const isEmpty = Object.values(data).some(
@@ -40,5 +57,3 @@ export class UserValidator {
       );
   }
 }
-
-export default UserValidator;
