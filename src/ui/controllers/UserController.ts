@@ -2,6 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
 import { UserService } from '../../application/services/UserService';
 import { ApplicationError } from '../../shared/errors/ApplicationError';
+import { ErrorDetail } from '../../@types/error-types';
 
 @injectable()
 export class UserController {
@@ -16,11 +17,12 @@ export class UserController {
       const user = await this.userService.createUser(req.body);
       res.status(201).json(user);
     } catch (error) {
-      if (error instanceof ApplicationError) {
-        next(error);
-      } else {
-        next(new ApplicationError('Failed to create user', 500));
-      }
+      const details: ErrorDetail[] = [{ key: 'endpoint', value: 'createUser' }];
+      const appError =
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to create user', 500, true, details);
+      next(appError);
     }
   }
 
@@ -33,11 +35,15 @@ export class UserController {
       const user = await this.userService.updateUser(req.params.id, req.body);
       res.status(200).json(user);
     } catch (error) {
-      if (error instanceof ApplicationError) {
-        next(error);
-      } else {
-        next(new ApplicationError('Failed to update user', 500));
-      }
+      const details: ErrorDetail[] = [
+        { key: 'endpoint', value: 'updateUser' },
+        { key: 'userID', value: req.params.id },
+      ];
+      const appError =
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to update user', 500, true, details);
+      next(appError);
     }
   }
 
@@ -50,11 +56,15 @@ export class UserController {
       await this.userService.deleteUser(req.params.id);
       res.status(204).send();
     } catch (error) {
-      if (error instanceof ApplicationError) {
-        next(error);
-      } else {
-        next(new ApplicationError('Failed to delete user', 500));
-      }
+      const details: ErrorDetail[] = [
+        { key: 'endpoint', value: 'deleteUser' },
+        { key: 'userID', value: req.params.id },
+      ];
+      const appError =
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to delete user', 500, true, details);
+      next(appError);
     }
   }
 
@@ -66,15 +76,21 @@ export class UserController {
     try {
       const user = await this.userService.findUserById(req.params.id);
       if (!user) {
-        throw new ApplicationError('User not found', 404);
+        const details: ErrorDetail[] = [
+          { key: 'userID', value: req.params.id },
+        ];
+        throw new ApplicationError('User not found', 404, true, details);
       }
       res.status(200).json(user);
     } catch (error) {
-      if (error instanceof ApplicationError) {
-        next(error);
-      } else {
-        next(new ApplicationError('Failed to retrieve user', 500));
-      }
+      const appError =
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to retrieve user', 500, true, [
+              { key: 'endpoint', value: 'getUserById' },
+              { key: 'userID', value: req.params.id },
+            ]);
+      next(appError);
     }
   }
 
@@ -87,11 +103,14 @@ export class UserController {
       const users = await this.userService.listUsers();
       res.status(200).json(users);
     } catch (error) {
-      if (error instanceof ApplicationError) {
-        next(error);
-      } else {
-        next(new ApplicationError('Failed to list users', 500));
-      }
+      const details: ErrorDetail[] = [
+        { key: 'endpoint', value: 'listAllUsers' },
+      ];
+      const appError =
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to list users', 500, true, details);
+      next(appError);
     }
   }
 }
