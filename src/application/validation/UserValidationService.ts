@@ -1,10 +1,12 @@
-import { inject, injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
-import { UniqueValidationUtils } from '../../shared/utils/uniqueValidationUtils';
 import { UserValidator } from '../../domain/validators/UserValidator';
+import { CreateUserDto } from '../dtos/user/CreateUserDto';
+import { UpdateUserDto } from '../dtos/user/UpdateUserDto';
+import { UniqueValidationUtils } from '../../shared/utils/uniqueValidationUtils';
 import { ApplicationError } from '../../shared/errors/ApplicationError';
+import { ZodIssue } from 'zod';
 import { ErrorDetail } from '../../@types/error-types';
-import bcrypt from 'bcrypt';
 
 @injectable()
 export class UserValidationService {
@@ -14,86 +16,37 @@ export class UserValidationService {
     private uniqueValidationUtils: UniqueValidationUtils,
   ) {}
 
-  async validateCreationData(userData: {
-    cpf: string;
-    email: string;
-    password: string;
-    confirmPassword?: string;
-  }) {
-    const validationResult =
-      UserValidator.validateCreateUser.safeParse(userData);
-    if (!validationResult.success) {
-      const errorDetails: ErrorDetail[] = validationResult.error.issues.map(
-        (issue) => ({
-          key: issue.path.join('.') || 'general',
+  public async validateCreateData(userData: CreateUserDto): Promise<void> {
+    const result =
+      await UserValidator.createBaseSchema().safeParseAsync(userData);
+    if (!result.success) {
+      const errors: ErrorDetail[] = result.error.issues.map(
+        (issue: ZodIssue) => ({
+          key: issue.path.join('.'),
           value: issue.message,
         }),
       );
-      throw new ApplicationError('Validation failed', 400, true, errorDetails);
+      throw new ApplicationError('Validation failed', 400, true, errors);
     }
-
-    await this.uniqueValidationUtils.checkUniqueEmail(userData.email, 'user');
-    await this.uniqueValidationUtils.checkUniqueCpf(userData.cpf, 'user');
-
-    if (userData.password) {
-      userData.password = await bcrypt.hash(userData.password, 10);
-    }
+    await this.validateUniqueness(userData);
   }
 
-  async validateUpdateData(
+  public async validateUpdateData(
     id: string,
-    userData: {
-      cpf?: string;
-      email?: string;
-      password?: string;
-      confirmPassword?: string;
-    },
-  ) {
-    const validationResult =
-      UserValidator.validateUpdateUser.safeParse(userData);
-    if (!validationResult.success) {
-      const errorDetails: ErrorDetail[] = validationResult.error.issues.map(
-        (issue) => ({
-          key: issue.path.join('.') || 'general',
+    userData: UpdateUserDto,
+  ): Promise<void> {
+    const updateSchema = UserValidator.createBaseSchema().partial();
+    const result = await updateSchema.safeParseAsync(userData);
+    if (!result.success) {
+      const errors: ErrorDetail[] = result.error.issues.map(
+        (issue: ZodIssue) => ({
+          key: issue.path.join('.'),
           value: issue.message,
         }),
       );
-      throw new ApplicationError('Validation failed', 400, true, errorDetails);
+      throw new ApplicationError('Validation failed', 400, true, errors);
     }
-
-    if (userData.cpf) {
-      await this.uniqueValidationUtils.checkUniqueCpf(userData.cpf, 'user', id);
-    }
-    if (userData.email) {
-      await this.uniqueValidationUtils.checkUniqueEmail(
-        userData.email,
-        'user',
-        id,
-      );
-    }
-
-    if (
-      userData.password &&
-      userData.confirmPassword &&
-      userData.password !== userData.confirmPassword
-    ) {
-      const passwordMismatchError: ErrorDetail[] = [
-        {
-          key: 'confirmPassword',
-          value: "Passwords don't match",
-        },
-      ];
-      throw new ApplicationError(
-        'Validation failed',
-        400,
-        true,
-        passwordMismatchError,
-      );
-    }
-
-    if (userData.password) {
-      userData.password = await bcrypt.hash(userData.password, 10);
-    }
+    await this.validateUniqueness(userData, id);
   }
 
   async validateUserExistence(id: string): Promise<void> {
@@ -105,5 +58,21 @@ export class UserValidationService {
       };
       throw new ApplicationError('User not found', 404, true, [notFoundError]);
     }
+  }
+
+  private async validateUniqueness(
+    userData: CreateUserDto | UpdateUserDto,
+    id?: string,
+  ): Promise<void> {
+    await this.uniqueValidationUtils.checkUniqueEmail(
+      userData.email ?? '',
+      'user',
+      id,
+    );
+    await this.uniqueValidationUtils.checkUniqueCpf(
+      userData.cpf ?? '',
+      'user',
+      id,
+    );
   }
 }
