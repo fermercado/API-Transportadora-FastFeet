@@ -10,7 +10,7 @@ const router = Router();
 const recipientController = container.resolve(RecipientController);
 
 router.post(
-  '/recipients',
+  'api/v1/recipients',
   AuthMiddleware,
   adminOnlyMiddleware,
   validateRequest(RecipientValidator.createSchema),
@@ -18,7 +18,7 @@ router.post(
 );
 
 router.put(
-  '/recipients/:id',
+  'api/v1/recipients/:id',
   AuthMiddleware,
   adminOnlyMiddleware,
   validateRequest(RecipientValidator.updateSchema),
@@ -26,21 +26,21 @@ router.put(
 );
 
 router.delete(
-  '/recipients/:id',
+  'api/v1/recipients/:id',
   AuthMiddleware,
   adminOnlyMiddleware,
   (req, res, next) => recipientController.deleteRecipient(req, res, next),
 );
 
 router.get(
-  '/recipients/:id',
+  'api/v1/recipients/:id',
   AuthMiddleware,
   adminOnlyMiddleware,
   (req, res, next) => recipientController.getRecipientById(req, res, next),
 );
 
 router.get(
-  '/recipients',
+  'api/v1/recipients',
   AuthMiddleware,
   adminOnlyMiddleware,
   (req, res, next) => recipientController.getAllRecipients(req, res, next),
