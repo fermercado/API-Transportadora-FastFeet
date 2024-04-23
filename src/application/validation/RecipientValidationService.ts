@@ -1,8 +1,10 @@
 import { injectable, inject } from 'tsyringe';
-import { RecipientValidator } from '../../domain/validators/RecipientValidator'; // Ajuste o caminho conforme necessário
+import { RecipientValidator } from '../../domain/validators/RecipientValidator';
 import { CreateRecipientDto } from '../dtos/recipient/CreateRecipientDto';
 import { UpdateRecipientDto } from '../dtos/recipient/UpdateRecipientDto';
-import UniqueValidationUtils from '../../shared/utils/uniqueValidationUtils'; // Ajuste o caminho conforme necessário
+import { UniqueValidationUtils } from '../../shared/utils/uniqueValidationUtils';
+import { ApplicationError } from '../../shared/errors/ApplicationError';
+import { ErrorDetail } from '../../@types/error-types';
 
 @injectable()
 export class RecipientValidationService {
@@ -14,31 +16,50 @@ export class RecipientValidationService {
   public async validateCreateData(data: CreateRecipientDto): Promise<void> {
     const result = await RecipientValidator.createSchema.safeParseAsync(data);
     if (!result.success) {
-      const errors = result.error.issues
-        .map((issue) => `${issue.path.join('.')} - ${issue.message}`)
-        .join(', ');
-      throw new Error(`Validation error: ${errors}`);
+      const errors: ErrorDetail[] = result.error.issues.map((issue) => ({
+        key: issue.path.join('.'),
+        value: issue.message,
+      }));
+      throw new ApplicationError('Validation error', 400, true, errors);
     }
 
-    await this.uniqueValidationUtils.checkUniqueRecipientEmail(
-      data.email,
-      data.cpf,
-    );
+    await this.validateUniqueness(data);
   }
 
-  public async validateUpdateData(data: UpdateRecipientDto): Promise<void> {
-    const result = await RecipientValidator.updateSchema.safeParseAsync(data);
+  public async validateUpdateData(
+    data: UpdateRecipientDto,
+    recipientId: string,
+  ): Promise<void> {
+    const result = await RecipientValidator.updateSchema
+      .partial()
+      .safeParseAsync(data);
     if (!result.success) {
-      const errors = result.error.issues
-        .map((issue) => `${issue.path.join('.')} - ${issue.message}`)
-        .join(', ');
-      throw new Error(`Validation error: ${errors}`);
+      const errors: ErrorDetail[] = result.error.issues.map((issue) => ({
+        key: issue.path.join('.'),
+        value: issue.message,
+      }));
+      throw new ApplicationError('Validation error', 400, true, errors);
     }
 
-    if (data.email && data.cpf) {
-      await this.uniqueValidationUtils.checkUniqueRecipientEmail(
-        data.email,
-        data.cpf,
+    await this.validateUniqueness(data, recipientId);
+  }
+
+  public async validateUniqueness(
+    recipientData: CreateRecipientDto | UpdateRecipientDto,
+    id?: string,
+  ): Promise<void> {
+    if (recipientData.email) {
+      await this.uniqueValidationUtils.checkUniqueEmail(
+        recipientData.email,
+        'recipient',
+        id,
+      );
+    }
+    if (recipientData.cpf) {
+      await this.uniqueValidationUtils.checkUniqueCpf(
+        recipientData.cpf,
+        'recipient',
+        id,
       );
     }
   }
