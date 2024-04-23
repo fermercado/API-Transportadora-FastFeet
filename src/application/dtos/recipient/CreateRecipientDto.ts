@@ -1,5 +1,4 @@
 export interface CreateRecipientDto {
-  name: string;
   email: string;
   cpf: string;
   zipCode: string;
@@ -9,4 +8,8 @@ export interface CreateRecipientDto {
   city?: string;
   state?: string;
   neighborhood?: string;
+  firstName: string;
+  lastName: string;
+  latitude?: number;
+  longitude?: number;
 }
