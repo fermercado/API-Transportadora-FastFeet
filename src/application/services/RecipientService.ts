@@ -5,41 +5,23 @@ import { ExternalServices } from '../../infrastructure/externalService/ExternalS
 import { CreateRecipientDto } from '../dtos/recipient/CreateRecipientDto';
 import { UpdateRecipientDto } from '../dtos/recipient/UpdateRecipientDto';
 import { RecipientValidationService } from '../validation/RecipientValidationService';
-import UniqueValidationUtils from '../../shared/utils/uniqueValidationUtils';
 
 @injectable()
 export class RecipientService {
   constructor(
     @inject('IRecipientRepository')
     private recipientRepository: IRecipientRepository,
-    @inject('ExternalServices')
-    private externalServices: ExternalServices,
     @inject('RecipientValidationService')
     private recipientValidationService: RecipientValidationService,
-    @inject('UniqueValidationUtils')
-    private uniqueValidationUtils: UniqueValidationUtils,
   ) {}
 
   public async createRecipient(
     recipientData: CreateRecipientDto,
   ): Promise<Recipient> {
-    await this.uniqueValidationUtils.checkUniqueRecipientCpf(recipientData.cpf);
-    await this.uniqueValidationUtils.checkUniqueRecipientEmail(
-      recipientData.email,
-    );
+    await this.recipientValidationService.validateCreateData(recipientData);
+    await this.recipientValidationService.validateUniqueness(recipientData);
 
-    const addressInfo = await ExternalServices.getAddressByZipCode(
-      recipientData.zipCode,
-    );
-
-    const newRecipientData: Partial<Recipient> = {
-      ...recipientData,
-      street: addressInfo.logradouro || recipientData.street,
-      neighborhood: addressInfo.bairro || recipientData.neighborhood,
-      city: addressInfo.localidade || recipientData.city,
-      state: addressInfo.uf || recipientData.state,
-    };
-
+    const newRecipientData = await this.processAddressInfo(recipientData);
     const newRecipient =
       await this.recipientRepository.create(newRecipientData);
     return newRecipient;
@@ -54,42 +36,21 @@ export class RecipientService {
       throw new Error('Recipient not found');
     }
 
+    await this.recipientValidationService.validateUpdateData(recipientData, id);
+    await this.recipientValidationService.validateUniqueness(recipientData, id);
+
     if (
       recipientData.zipCode &&
       recipientData.zipCode !== existingRecipient.zipCode
     ) {
-      const addressInfo = await ExternalServices.getAddressByZipCode(
-        recipientData.zipCode,
-      );
-
-      recipientData.street = addressInfo.logradouro || recipientData.street;
-      recipientData.neighborhood =
-        addressInfo.bairro || recipientData.neighborhood;
-      recipientData.city = addressInfo.localidade || recipientData.city;
-      recipientData.state = addressInfo.uf || recipientData.state;
-    }
-    if (
-      recipientData.email &&
-      recipientData.email !== existingRecipient.email
-    ) {
-      await this.uniqueValidationUtils.checkUniqueRecipientEmail(
-        recipientData.email,
-        existingRecipient.id,
-      );
-    }
-
-    if (recipientData.cpf && recipientData.cpf !== existingRecipient.cpf) {
-      await this.uniqueValidationUtils.checkUniqueRecipientCpf(
-        recipientData.cpf,
-        existingRecipient.id,
-      );
+      const addressData = await this.processAddressInfo(recipientData);
+      Object.assign(recipientData, addressData);
     }
 
     const updatedRecipient = await this.recipientRepository.update(
       id,
       recipientData,
     );
-
     return updatedRecipient;
   }
 
@@ -106,6 +67,42 @@ export class RecipientService {
   }
 
   public async listRecipients(): Promise<Recipient[]> {
-    return this.recipientRepository.findAll();
+    return this.recipientRepository.find();
+  }
+
+  private async processAddressInfo(
+    recipientData: CreateRecipientDto | UpdateRecipientDto,
+  ): Promise<CreateRecipientDto | UpdateRecipientDto> {
+    const zipCode = recipientData.zipCode;
+    if (!zipCode) {
+      throw new Error('Zip code is required');
+    }
+
+    const addressInfo = await ExternalServices.getAddressByZipCode(zipCode);
+    let missingFields = [];
+
+    if (!addressInfo.logradouro && !recipientData.street)
+      missingFields.push('street');
+    if (!addressInfo.bairro && !recipientData.neighborhood)
+      missingFields.push('neighborhood');
+    if (!addressInfo.localidade && !recipientData.city)
+      missingFields.push('city');
+    if (!addressInfo.uf && !recipientData.state) missingFields.push('state');
+
+    if (missingFields.length > 0) {
+      throw new Error(
+        `Some address information was not found. Please complete the following data: ${missingFields.join(', ')}.`,
+      );
+    }
+
+    return {
+      ...recipientData,
+      street: addressInfo.logradouro || recipientData.street,
+      neighborhood: addressInfo.bairro || recipientData.neighborhood,
+      city: addressInfo.localidade || recipientData.city,
+      state: addressInfo.uf || recipientData.state,
+      latitude: addressInfo.latitude || recipientData.latitude,
+      longitude: addressInfo.longitude || recipientData.longitude,
+    };
   }
 }
