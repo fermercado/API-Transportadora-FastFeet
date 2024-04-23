@@ -1,7 +1,7 @@
 import { inject, injectable } from 'tsyringe';
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
+import { UserValidationService } from '../validation/UserValidationService';
 import { User, UserWithoutPassword } from '../../domain/entities/User';
-import UserValidationService from '../validation/UserValidationService';
 import { CreateUserDto } from '../dtos/user/CreateUserDto';
 import { UpdateUserDto } from '../dtos/user/UpdateUserDto';
 import bcrypt from 'bcrypt';
