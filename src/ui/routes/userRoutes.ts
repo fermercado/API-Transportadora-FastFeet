@@ -10,7 +10,7 @@ const router = Router();
 const userController = container.resolve(UserController);
 
 router
-  .route('/users')
+  .route('api/v1/users')
   .get(
     AuthMiddleware,
     adminOnlyMiddleware,
@@ -24,7 +24,7 @@ router
   );
 
 router
-  .route('/users/:id')
+  .route('api/v1/users/:id')
   .get(
     AuthMiddleware,
     adminOnlyMiddleware,
