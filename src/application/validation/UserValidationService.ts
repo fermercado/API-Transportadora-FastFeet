@@ -1,13 +1,17 @@
+import { inject, injectable } from 'tsyringe';
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
+import { UniqueValidationUtils } from '../../shared/utils/uniqueValidationUtils';
 import { UserValidator } from '../../domain/validators/UserValidator';
 import { ApplicationError } from '../../shared/errors/ApplicationError';
-import { inject, injectable } from 'tsyringe';
+import { ErrorDetail } from '../../@types/error-types';
 import bcrypt from 'bcrypt';
 
 @injectable()
 export class UserValidationService {
   constructor(
     @inject('IUserRepository') private userRepository: IUserRepository,
+    @inject('UniqueValidationUtils')
+    private uniqueValidationUtils: UniqueValidationUtils,
   ) {}
 
   async validateCreationData(userData: {
@@ -19,20 +23,21 @@ export class UserValidationService {
     const validationResult =
       UserValidator.validateCreateUser.safeParse(userData);
     if (!validationResult.success) {
-      throw new ApplicationError(
-        'Validation failed',
-        400,
-        true,
-        validationResult.error.issues.map((issue) => ({
-          field: issue.path.join('.') || 'general',
-          message: issue.message,
-        })),
+      const errorDetails: ErrorDetail[] = validationResult.error.issues.map(
+        (issue) => ({
+          key: issue.path.join('.') || 'general',
+          value: issue.message,
+        }),
       );
+      throw new ApplicationError('Validation failed', 400, true, errorDetails);
     }
+
+    await this.uniqueValidationUtils.checkUniqueEmail(userData.email, 'user');
+    await this.uniqueValidationUtils.checkUniqueCpf(userData.cpf, 'user');
+
     if (userData.password) {
       userData.password = await bcrypt.hash(userData.password, 10);
     }
-    await this.validateCpfAndEmailUniqueness(userData.cpf, userData.email);
   }
 
   async validateUpdateData(
@@ -47,80 +52,58 @@ export class UserValidationService {
     const validationResult =
       UserValidator.validateUpdateUser.safeParse(userData);
     if (!validationResult.success) {
+      const errorDetails: ErrorDetail[] = validationResult.error.issues.map(
+        (issue) => ({
+          key: issue.path.join('.') || 'general',
+          value: issue.message,
+        }),
+      );
+      throw new ApplicationError('Validation failed', 400, true, errorDetails);
+    }
+
+    if (userData.cpf) {
+      await this.uniqueValidationUtils.checkUniqueCpf(userData.cpf, 'user', id);
+    }
+    if (userData.email) {
+      await this.uniqueValidationUtils.checkUniqueEmail(
+        userData.email,
+        'user',
+        id,
+      );
+    }
+
+    if (
+      userData.password &&
+      userData.confirmPassword &&
+      userData.password !== userData.confirmPassword
+    ) {
+      const passwordMismatchError: ErrorDetail[] = [
+        {
+          key: 'confirmPassword',
+          value: "Passwords don't match",
+        },
+      ];
       throw new ApplicationError(
         'Validation failed',
         400,
         true,
-        validationResult.error.issues.map((issue) => ({
-          field: issue.path.join('.') || 'general',
-          message: issue.message,
-        })),
+        passwordMismatchError,
       );
     }
 
     if (userData.password) {
-      if (
-        userData.confirmPassword &&
-        userData.password !== userData.confirmPassword
-      ) {
-        throw new ApplicationError('Validation failed', 400, true, [
-          { field: 'confirmPassword', message: "Passwords don't match" },
-        ]);
-      }
       userData.password = await bcrypt.hash(userData.password, 10);
-    }
-
-    await this.validateCpfAndEmailUniqueness(userData.cpf, userData.email, id);
-  }
-
-  private async validateCpfAndEmailUniqueness(
-    cpf?: string,
-    email?: string,
-    userIdToUpdate?: string,
-  ): Promise<void> {
-    if (cpf) {
-      const userByCpf = await this.userRepository.findByCpf(cpf);
-      if (userByCpf && userByCpf.id !== userIdToUpdate) {
-        throw new ApplicationError(
-          'A user with the same CPF already exists.',
-          400,
-          true,
-          [
-            {
-              field: 'cpf',
-              message: 'A user with the same CPF already exists.',
-            },
-          ],
-        );
-      }
-    }
-
-    if (email) {
-      const userByEmail = await this.userRepository.findByEmail(email);
-      if (userByEmail && userByEmail.id !== userIdToUpdate) {
-        throw new ApplicationError(
-          'A user with the same email already exists.',
-          400,
-          true,
-          [
-            {
-              field: 'email',
-              message: 'A user with the same email already exists.',
-            },
-          ],
-        );
-      }
     }
   }
 
   async validateUserExistence(id: string): Promise<void> {
     const user = await this.userRepository.findById(id);
     if (!user) {
-      throw new ApplicationError('User not found', 404, true, [
-        { field: 'id', message: 'No user found with the provided ID.' },
-      ]);
+      const notFoundError: ErrorDetail = {
+        key: 'id',
+        value: 'No user found with the provided ID.',
+      };
+      throw new ApplicationError('User not found', 404, true, [notFoundError]);
     }
   }
 }
-
-export default UserValidationService;
