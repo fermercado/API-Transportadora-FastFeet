@@ -17,7 +17,7 @@ export class UserService {
   public async createUser(
     userData: CreateUserDto,
   ): Promise<UserWithoutPassword> {
-    await this.userValidationService.validateCreationData(userData);
+    await this.userValidationService.validateCreateData(userData);
     const userToSave: Partial<User> = {
       ...userData,
     };

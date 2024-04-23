@@ -25,10 +25,6 @@ export class RecipientRepository implements IRecipientRepository {
     return this.ormRepository.find();
   }
 
-  public async findAll(): Promise<Recipient[]> {
-    return this.ormRepository.find();
-  }
-
   public async create(recipientData: Partial<Recipient>): Promise<Recipient> {
     const recipient = this.ormRepository.create(recipientData);
     return this.ormRepository.save(recipient);

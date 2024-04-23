@@ -9,6 +9,5 @@ export interface IRecipientRepository {
   findByEmail(email: string): Promise<Recipient | undefined>;
   findByCpf(cpf: string): Promise<Recipient | undefined>;
   findByZipCode(zipCode: string): Promise<Recipient | undefined>;
-  findAll(): Promise<Recipient[]>;
   find(): Promise<Recipient[]>;
 }
