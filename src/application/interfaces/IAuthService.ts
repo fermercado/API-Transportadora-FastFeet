@@ -11,5 +11,5 @@ export interface AuthResult {
 
 export interface JwtPayload {
   userId: string;
-  role: string;
+  role: 'admin' | 'deliveryman';
 }
