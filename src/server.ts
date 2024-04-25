@@ -2,7 +2,10 @@ import 'reflect-metadata';
 import { container } from 'tsyringe';
 import { DataSource } from 'typeorm';
 import AppDataSource from './infrastructure/orm/ormconfig';
-import './dependencyContainer';
+import './infrastructure/dependencyInjection/userDependencies';
+import './infrastructure/dependencyInjection/recipientDependencies';
+import './infrastructure/dependencyInjection/servicesDependencies';
+import './infrastructure/dependencyInjection/orderDependencias';
 
 const PORT = process.env.PORT || 3000;
 
