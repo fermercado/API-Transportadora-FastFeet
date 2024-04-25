@@ -1,16 +1,14 @@
 import 'reflect-metadata';
 import { container } from 'tsyringe';
 import { DataSource } from 'typeorm';
-import AppDataSource from './ormconfig';
+import AppDataSource from './infrastructure/orm/ormconfig';
 import './dependencyContainer';
 
 const PORT = process.env.PORT || 3000;
 
 AppDataSource.initialize()
   .then(() => {
-    console.log('DataSource inicializado com sucesso.');
     container.registerInstance<DataSource>('DataSource', AppDataSource);
-    console.log('Importando e criando a aplicação Express...');
 
     import('./app').then(({ createApp }) => {
       const app = createApp();
@@ -19,7 +17,7 @@ AppDataSource.initialize()
       });
     });
   })
-  .catch((error) => {
+  .catch((error: any) => {
     console.error('Error during Data Source initialization', error);
     process.exit(1);
   });
