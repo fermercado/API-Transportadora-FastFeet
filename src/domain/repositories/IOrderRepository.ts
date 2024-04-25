@@ -1,9 +1,11 @@
-import { Order } from '../entities/Order';
+import { Order } from '../../domain/entities/Order';
 
 export interface IOrderRepository {
   create(orderData: Partial<Order>): Promise<Order>;
-  save(order: Order): Promise<Order>;
-  remove(order: Order): Promise<void>;
-  findById(id: string): Promise<Order | undefined>;
+  update(id: string, orderData: Partial<Order>): Promise<Order>;
   find(): Promise<Order[]>;
+  findById(id: string): Promise<Order | undefined>;
+  findByDeliveryman(deliverymanId: string): Promise<Order[]>;
+  save(order: Order): Promise<Order>;
+  remove(id: string): Promise<void>;
 }
