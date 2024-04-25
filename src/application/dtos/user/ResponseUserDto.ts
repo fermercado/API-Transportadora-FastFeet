@@ -1,5 +1,5 @@
 import { UserRole } from '../../../domain/enums/UserRole';
-export class UserResponseDto {
+export class ResponseUserDto {
   id!: string;
   cpf!: string;
   role!: UserRole;

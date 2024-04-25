@@ -4,6 +4,7 @@ export class RecipientResponseDto {
   lastName!: string;
   street!: string;
   number!: number;
+  cpf!: string;
   complement?: string;
   neighborhood!: string;
   city!: string;
