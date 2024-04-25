@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { container } from 'tsyringe';
 import { OrderController } from '../controllers/OrderController';
 import { validateRequest } from '../../ui/middleware/validateRequest';
-import { adminOnlyMiddleware } from '../../infrastructure/security/adminOnlyMiddleware';
+import { AdminOnlyMiddleware } from '../../infrastructure/security/adminOnlyMiddleware';
 import { AuthMiddleware } from '../../infrastructure/security/AuthMiddleware';
 import { upload } from '../../infrastructure/config/multerConfig';
 import {
@@ -16,51 +16,54 @@ const orderController = container.resolve(OrderController);
 router
   .route('/api/v1/orders')
   .get(
-    AuthMiddleware,
-    adminOnlyMiddleware,
+    AuthMiddleware.verifyToken,
+    AdminOnlyMiddleware.checkAdminRole,
     orderController.listOrders.bind(orderController),
   )
   .post(
-    AuthMiddleware,
-    adminOnlyMiddleware,
+    AuthMiddleware.verifyToken,
+    AdminOnlyMiddleware.checkAdminRole,
     validateRequest(createOrderSchema),
     orderController.createOrder.bind(orderController),
   );
 
 router
   .route('/api/v1/orders/:id')
-  .get(AuthMiddleware, orderController.getOrderById.bind(orderController))
+  .get(
+    AuthMiddleware.verifyToken,
+    orderController.getOrderById.bind(orderController),
+  )
   .put(
-    AuthMiddleware,
-    adminOnlyMiddleware,
+    AuthMiddleware.verifyToken,
+    AdminOnlyMiddleware.checkAdminRole,
     validateRequest(updateOrderSchema),
     orderController.updateOrder.bind(orderController),
   )
   .delete(
-    AuthMiddleware,
-    adminOnlyMiddleware,
+    AuthMiddleware.verifyToken,
+    AdminOnlyMiddleware.checkAdminRole,
     orderController.deleteOrder.bind(orderController),
   );
 
 router.put(
   '/api/v1/orders/:id/waiting',
-  AuthMiddleware,
+  AuthMiddleware.verifyToken,
   orderController.markOrderAsWaiting.bind(orderController),
 );
 router.put(
   '/api/v1/orders/:id/pickup',
-  AuthMiddleware,
+  AuthMiddleware.verifyToken,
   orderController.pickupOrder.bind(orderController),
 );
 router.put(
   '/api/v1/orders/:id/delivered',
-  AuthMiddleware,
+  AuthMiddleware.verifyToken,
   upload.single('deliveryPhoto'),
   orderController.markOrderAsDelivered.bind(orderController),
 );
 router.put(
   '/api/v1/orders/:id/returned',
-  AuthMiddleware,
+  AuthMiddleware.verifyToken,
   orderController.returnOrder.bind(orderController),
 );
 

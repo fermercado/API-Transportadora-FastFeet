@@ -5,19 +5,19 @@ import { AuthMiddleware } from '../../infrastructure/security/AuthMiddleware';
 import { validateRequest } from '../../ui/middleware/validateRequest';
 import { DeliveryLocationValidator } from '../../domain/validators/DeliveryLocationValidator';
 
-const deliveryRouter = Router();
+const router = Router();
 const orderController = container.resolve(OrderController);
 
-deliveryRouter.use(AuthMiddleware);
+router.use(AuthMiddleware.verifyToken);
 
-deliveryRouter
+router
   .route('/api/v1/deliveries')
   .get(orderController.listDeliveriesForDeliveryman.bind(orderController));
 
-deliveryRouter.post(
+router.post(
   '/api/v1/deliveries/nearby',
   validateRequest(DeliveryLocationValidator.createSchema),
   orderController.findNearbyDeliveries.bind(orderController),
 );
 
-export default deliveryRouter;
+export default router;
