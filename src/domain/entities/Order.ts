@@ -5,42 +5,36 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
-  JoinColumn,
 } from 'typeorm';
-import { Deliveryman } from './Deliveryman';
+import { User } from './User';
 import { Recipient } from './Recipient';
+import { OrderStatus } from '../enums/OrderStatus';
+import { IsUUID } from 'class-validator';
 
 @Entity('orders')
 export class Order {
+  @IsUUID()
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
   @Column()
   trackingCode!: string;
 
+  @ManyToOne(() => User, (user) => user.id, { nullable: true })
+  deliveryman?: User;
+
+  @ManyToOne(() => Recipient, (recipient) => recipient.id)
+  recipient!: Recipient;
+
   @Column({
     type: 'enum',
-    enum: ['waiting', 'picked_up', 'delivered', 'returned'],
-    default: 'waiting',
+    enum: OrderStatus,
+    default: OrderStatus.Pending,
   })
-  status!: 'waiting' | 'picked_up' | 'delivered' | 'returned';
-
-  @Column({ nullable: true })
-  pickUpDate?: Date;
-
-  @Column({ nullable: true })
-  deliveryDate?: Date;
+  status!: OrderStatus;
 
   @Column({ nullable: true })
   deliveryPhoto?: string;
-
-  @ManyToOne(() => Deliveryman)
-  @JoinColumn({ name: 'deliveryman_id' })
-  deliveryman!: Deliveryman;
-
-  @ManyToOne(() => Recipient)
-  @JoinColumn({ name: 'recipient_id' })
-  recipient!: Recipient;
 
   @CreateDateColumn()
   createdAt!: Date;
