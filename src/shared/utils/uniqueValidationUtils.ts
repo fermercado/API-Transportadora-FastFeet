@@ -2,9 +2,12 @@ import { IUserRepository } from '../../domain/repositories/IUserRepository';
 import { IRecipientRepository } from '../../domain/repositories/IRecipientRepository';
 import { injectable, inject } from 'tsyringe';
 import { ApplicationError } from '../errors/ApplicationError';
+import { ErrorDetail } from '../../@types/error-types';
+import { User } from '../../domain/entities/User';
+import { Recipient } from '../../domain/entities/Recipient';
 
 @injectable()
-class UniqueValidationUtils {
+export class UniqueValidationUtils {
   constructor(
     @inject('IUserRepository')
     private userRepository: IUserRepository,
@@ -12,25 +15,59 @@ class UniqueValidationUtils {
     private recipientRepository: IRecipientRepository,
   ) {}
 
-  async checkUniqueRecipientEmail(
+  async checkUniqueEmail(
     email: string,
+    repositoryType: 'user' | 'recipient',
     excludeId?: string,
   ): Promise<void> {
-    const recipientByEmail = await this.recipientRepository.findByEmail(email);
-    if (recipientByEmail && recipientByEmail.id !== excludeId) {
-      throw new ApplicationError('Email already in use', 400);
+    await this.checkUniqueness(email, 'email', repositoryType, excludeId);
+  }
+
+  async checkUniqueCpf(
+    cpf: string,
+    repositoryType: 'user' | 'recipient',
+    excludeId?: string,
+  ): Promise<void> {
+    await this.checkUniqueness(cpf, 'cpf', repositoryType, excludeId);
+  }
+
+  private async checkUniqueness(
+    value: string,
+    fieldName: string,
+    repositoryType: 'user' | 'recipient',
+    excludeId?: string,
+  ): Promise<void> {
+    const findBy = this.getFindByMethod(fieldName, repositoryType);
+    let entity = await findBy(value);
+
+    if (entity && entity.id !== excludeId) {
+      const errorDetails: ErrorDetail[] = [
+        {
+          key: fieldName,
+          value: `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} already in use`,
+        },
+      ];
+      throw new ApplicationError(
+        `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} already in use`,
+        400,
+        true,
+        errorDetails,
+      );
     }
   }
 
-  async checkUniqueRecipientCpf(
-    cpf: string,
-    excludeId?: string,
-  ): Promise<void> {
-    const recipientByCpf = await this.recipientRepository.findByCpf(cpf);
-    if (recipientByCpf && recipientByCpf.id !== excludeId) {
-      throw new ApplicationError('CPF already in use', 400);
+  private getFindByMethod(
+    fieldName: string,
+    repositoryType: 'user' | 'recipient',
+  ): (value: string) => Promise<User | Recipient | undefined> {
+    if (repositoryType === 'recipient') {
+      return fieldName === 'email'
+        ? this.recipientRepository.findByEmail.bind(this.recipientRepository)
+        : this.recipientRepository.findByCpf.bind(this.recipientRepository);
+    } else {
+      return fieldName === 'email'
+        ? this.userRepository.findByEmail.bind(this.userRepository)
+        : this.userRepository.findByCpf.bind(this.userRepository);
     }
   }
 }
-
-export default UniqueValidationUtils;
