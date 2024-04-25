@@ -1,39 +1,57 @@
-import { AuthResult, UserDetails } from '../interfaces/IAuthService';
-import { injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 import jwt, { Secret } from 'jsonwebtoken';
 import { UserService } from './UserService';
+import { AuthResult, UserDetails } from '../interfaces/IAuthService';
+import { UserRole } from '../../domain/enums/UserRole';
+import { ApplicationError } from '../../shared/errors/ApplicationError';
+import { ErrorDetail } from '../../@types/error-types';
 
 const JWT_SECRET: Secret = process.env.JWT_SECRET || '';
 
 @injectable()
 export class AuthService {
-  constructor(private userService: UserService) {}
+  constructor(@inject(UserService) private userService: UserService) {}
 
-  async authenticate(
-    cpf: string,
-    password: string,
-  ): Promise<AuthResult | null> {
+  async authenticate(cpf: string, password: string): Promise<AuthResult> {
     const user = await this.userService.validateUser(cpf, password);
-
     if (!user) {
-      return null;
+      const errorDetails: ErrorDetail[] = [
+        { key: 'cpf', value: cpf },
+        { key: 'errorReason', value: 'Invalid CPF or password' },
+      ];
+      throw new ApplicationError(
+        'Invalid CPF or password',
+        401,
+        true,
+        errorDetails,
+      );
     }
 
-    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, {
-      expiresIn: '24h',
-    });
+    const token = this.createToken(user);
+    const userDetails = this.createUserDetails(user);
 
-    const userDetails: UserDetails = {
-      name: user.firstName + ' ' + user.lastName,
-      email: user.email,
-      role: user.role,
-    };
-
-    const authResult: AuthResult = {
+    return {
       token,
       user: userDetails,
     };
+  }
 
-    return authResult;
+  private createToken(user: { id: string; role: UserRole }): string {
+    return jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, {
+      expiresIn: '24h',
+    });
+  }
+
+  private createUserDetails(user: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: UserRole;
+  }): UserDetails {
+    return {
+      name: `${user.firstName} ${user.lastName}`,
+      email: user.email,
+      role: user.role,
+    };
   }
 }
