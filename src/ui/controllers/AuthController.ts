@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthService } from '../../application/services/AuthService';
 import { injectable, inject } from 'tsyringe';
-import { ApplicationError } from '../../shared/errors/ApplicationError';
+import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 import { ErrorDetail } from '../../@types/error-types';
 
 @injectable()

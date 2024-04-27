@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 import { hash } from 'bcrypt';
-import AppDataSource from '../infrastructure/orm/ormconfig';
-import { User } from '../domain/entities/User';
-import { UserValidator } from '../domain/validators/UserValidator';
-import { UserRole } from '../domain/enums/UserRole';
+import AppDataSource from '../../orm/ormconfig';
+import { User } from '../../../domain/entities/User';
+import { UserValidator } from '../../../domain/validators/UserValidator';
+import { UserRole } from '../../../domain/enums/UserRole';
 import { DeepPartial } from 'typeorm';
 
 class CreateAdminSeed {
@@ -24,6 +24,7 @@ class CreateAdminSeed {
       };
 
       const validatedData = UserValidator.validateCreateUser.parse(adminData);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword, ...dataToSave } = validatedData;
 
       const adminExists = await userRepository.findOneBy({

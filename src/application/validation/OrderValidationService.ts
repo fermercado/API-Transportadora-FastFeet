@@ -4,7 +4,7 @@ import { Recipient } from '../../domain/entities/Recipient';
 import { User } from '../../domain/entities/User';
 import { Order } from '../../domain/entities/Order';
 import { IOrderRepository } from '../../domain/repositories/IOrderRepository';
-import { ApplicationError } from '../../shared/errors/ApplicationError';
+import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 import { ErrorDetail } from '../../@types/error-types';
 import { CreateRecipientDto } from '../dtos/recipient/CreateRecipientDto';
 import { UpdateRecipientDto } from '../dtos/recipient/UpdateRecipientDto';

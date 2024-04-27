@@ -79,7 +79,7 @@ export class RecipientService {
     }
 
     const addressInfo = await ExternalServices.getAddressByZipCode(zipCode);
-    let missingFields = [];
+    const missingFields = [];
 
     if (!addressInfo.logradouro && !recipientData.street)
       missingFields.push('street');

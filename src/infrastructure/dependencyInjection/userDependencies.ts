@@ -1,6 +1,6 @@
 import { container } from 'tsyringe';
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
-import { UserRepository } from '../../infrastructure/repositories/UserRepository';
+import { UserRepository } from '../orm/repositories/UserRepository';
 import { UserService } from '../../application/services/UserService';
 import { UserValidationService } from '../../application/validation/UserValidationService';
 

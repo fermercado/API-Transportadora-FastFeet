@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import { ApplicationError } from '../../shared/errors/ApplicationError';
+import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 
 export const errorHandler = (
   err: Error,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ) => {
   if (err instanceof ApplicationError) {
     return res.status(err.statusCode).json({

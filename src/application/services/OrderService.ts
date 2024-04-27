@@ -114,7 +114,7 @@ export class OrderService {
     return order;
   }
 
-  async pickupOrder(orderId: string, deliverymanId: string): Promise<Order> {
+  async pickupOrder(orderId: string, _deliverymanId: string): Promise<Order> {
     const order = await this.orderValidationService.validateOrderTransition(
       orderId,
       OrderStatus.PickedUp,
@@ -144,7 +144,7 @@ export class OrderService {
     return order;
   }
 
-  async returnOrder(orderId: string, deliverymanId: string): Promise<Order> {
+  async returnOrder(orderId: string, _deliverymanId: string): Promise<Order> {
     const order = await this.orderValidationService.validateOrderTransition(
       orderId,
       OrderStatus.Returned,

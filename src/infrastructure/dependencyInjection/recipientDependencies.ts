@@ -1,6 +1,6 @@
 import { container } from 'tsyringe';
 import { IRecipientRepository } from '../../domain/repositories/IRecipientRepository';
-import { RecipientRepository } from '../../infrastructure/repositories/RecipientRepository';
+import { RecipientRepository } from '../orm/repositories/RecipientRepository';
 import { RecipientService } from '../../application/services/RecipientService';
 import { RecipientValidationService } from '../../application/validation/RecipientValidationService';
 

@@ -1,6 +1,6 @@
 import { container } from 'tsyringe';
 import { IOrderRepository } from '../../domain/repositories/IOrderRepository';
-import { OrderRepository } from '../../infrastructure/repositories/OrderRepository';
+import { OrderRepository } from '../orm/repositories/OrderRepository';
 import { OrderService } from '../../application/services/OrderService';
 import { OrderValidationService } from '../../application/validation/OrderValidationService';
 

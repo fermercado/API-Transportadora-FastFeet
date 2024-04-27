@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { DataSource, Repository } from 'typeorm';
-import { User } from '../../domain/entities/User';
-import { IUserRepository } from '../../domain/repositories/IUserRepository';
+import { User } from '../../../domain/entities/User';
+import { IUserRepository } from '../../../domain/repositories/IUserRepository';
 
 @injectable()
 export class UserRepository implements IUserRepository {
@@ -17,7 +17,7 @@ export class UserRepository implements IUserRepository {
   }
 
   public async update(id: string, userData: Partial<User>): Promise<User> {
-    let user = await this.ormRepository.findOneBy({ id });
+    const user = await this.ormRepository.findOneBy({ id });
     if (!user) {
       throw new Error('User not found');
     }

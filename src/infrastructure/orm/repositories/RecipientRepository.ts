@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { DataSource, Repository } from 'typeorm';
-import { Recipient } from '../../domain/entities/Recipient';
-import { IRecipientRepository } from '../../domain/repositories/IRecipientRepository';
+import { Recipient } from '../../../domain/entities/Recipient';
+import { IRecipientRepository } from '../../../domain/repositories/IRecipientRepository';
 
 @injectable()
 export class RecipientRepository implements IRecipientRepository {

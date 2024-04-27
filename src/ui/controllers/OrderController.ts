@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { inject, injectable } from 'tsyringe';
 import { OrderService } from '../../application/services/OrderService';
-import { ApplicationError } from '../../shared/errors/ApplicationError';
+import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 import { OrderResponseDto } from '../../application/dtos/order/ResponseOrderDto';
 import { ErrorDetail } from '../../@types/error-types';
 import { Order } from '../../domain/entities/Order';
@@ -80,7 +80,7 @@ export class OrderController {
     }
   }
 
-  async listOrders(req: Request, res: Response): Promise<Response> {
+  async listOrders(_req: Request, res: Response): Promise<Response> {
     try {
       const orders = await this.orderService.listOrders();
       return res.json(orders);

@@ -30,7 +30,7 @@ export class ExternalServices {
   ): Promise<{ latitude?: number; longitude?: number }> {
     try {
       const response = await axios.get(
-        `https://api.opencagedata.com/geocode/v1/json`,
+        'https://api.opencagedata.com/geocode/v1/json',
         {
           params: {
             q: address,

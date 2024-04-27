@@ -2,7 +2,7 @@ import { container } from 'tsyringe';
 import { AuthService } from '../../application/services/AuthService';
 import { DeliveryNotificationService } from '../../application/services/DeliveryNotificationService';
 import { ExternalServices } from '../../infrastructure/externalService/ExternalService';
-import { UniqueValidationUtils } from '../../shared/utils/uniqueValidationUtils';
+import { UniqueValidationUtils } from '../shared/utils/uniqueValidationUtils';
 
 container.registerSingleton('AuthService', AuthService);
 container.registerSingleton(

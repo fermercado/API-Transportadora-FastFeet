@@ -1,4 +1,4 @@
-import { ErrorDetail } from '../../@types/error-types';
+import { ErrorDetail } from '../../../@types/error-types';
 
 export class ApplicationError extends Error {
   public readonly statusCode: number;
@@ -20,7 +20,7 @@ export class ApplicationError extends Error {
   }
 
   public formatForLogging(): string {
-    let detailString =
+    const detailString =
       this.details?.map((d) => `${d.key}: ${d.value}`).join(', ') ||
       'No details';
     return `${this.message} - Status: ${this.statusCode} - Details: ${detailString}`;

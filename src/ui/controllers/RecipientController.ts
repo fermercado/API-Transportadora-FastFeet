@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
 import { RecipientService } from '../../application/services/RecipientService';
-import { ApplicationError } from '../../shared/errors/ApplicationError';
+import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 import { ErrorDetail } from '../../@types/error-types';
 
 @injectable()
@@ -135,7 +135,7 @@ export class RecipientController {
   }
 
   async getAllRecipients(
-    req: Request,
+    _req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> {

@@ -3,7 +3,7 @@ import jwt, { Secret } from 'jsonwebtoken';
 import { UserService } from './UserService';
 import { AuthResult, UserDetails } from '../interfaces/IAuthService';
 import { UserRole } from '../../domain/enums/UserRole';
-import { ApplicationError } from '../../shared/errors/ApplicationError';
+import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 import { ErrorDetail } from '../../@types/error-types';
 
 const JWT_SECRET: Secret = process.env.JWT_SECRET || '';

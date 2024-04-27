@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
 import { UserService } from '../../application/services/UserService';
-import { ApplicationError } from '../../shared/errors/ApplicationError';
+import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 import { ErrorDetail } from '../../@types/error-types';
 
 @injectable()
@@ -95,7 +95,7 @@ export class UserController {
   }
 
   async getAllUsers(
-    req: Request,
+    _req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> {

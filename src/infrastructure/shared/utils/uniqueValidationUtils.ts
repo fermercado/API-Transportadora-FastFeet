@@ -1,10 +1,10 @@
-import { IUserRepository } from '../../domain/repositories/IUserRepository';
-import { IRecipientRepository } from '../../domain/repositories/IRecipientRepository';
+import { IUserRepository } from '../../../domain/repositories/IUserRepository';
+import { IRecipientRepository } from '../../../domain/repositories/IRecipientRepository';
 import { injectable, inject } from 'tsyringe';
 import { ApplicationError } from '../errors/ApplicationError';
-import { ErrorDetail } from '../../@types/error-types';
-import { User } from '../../domain/entities/User';
-import { Recipient } from '../../domain/entities/Recipient';
+import { ErrorDetail } from '../../../@types/error-types';
+import { User } from '../../../domain/entities/User';
+import { Recipient } from '../../../domain/entities/Recipient';
 
 @injectable()
 export class UniqueValidationUtils {
@@ -38,7 +38,7 @@ export class UniqueValidationUtils {
     excludeId?: string,
   ): Promise<void> {
     const findBy = this.getFindByMethod(fieldName, repositoryType);
-    let entity = await findBy(value);
+    const entity = await findBy(value);
 
     if (entity && entity.id !== excludeId) {
       const errorDetails: ErrorDetail[] = [

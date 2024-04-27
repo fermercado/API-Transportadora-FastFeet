@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { DataSource, Repository } from 'typeorm';
-import { Order } from '../../domain/entities/Order';
-import { IOrderRepository } from '../../domain/repositories/IOrderRepository';
+import { Order } from '../../../domain/entities/Order';
+import { IOrderRepository } from '../../../domain/repositories/IOrderRepository';
 
 @injectable()
 export class OrderRepository implements IOrderRepository {
@@ -12,17 +12,12 @@ export class OrderRepository implements IOrderRepository {
   }
 
   public async create(orderData: Partial<Order>): Promise<Order> {
-    try {
-      const order = this.ormRepository.create(orderData);
-      const savedOrder = await this.ormRepository.save(order);
-      return savedOrder;
-    } catch (error) {
-      throw error;
-    }
+    const order = this.ormRepository.create(orderData);
+    return this.ormRepository.save(order);
   }
 
   public async update(id: string, orderData: Partial<Order>): Promise<Order> {
-    let order = await this.ormRepository.findOneBy({ id });
+    const order = await this.ormRepository.findOneBy({ id });
     if (!order) {
       throw new Error('Order not found');
     }

@@ -2,8 +2,8 @@ import { injectable, inject } from 'tsyringe';
 import { RecipientValidator } from '../../domain/validators/RecipientValidator';
 import { CreateRecipientDto } from '../dtos/recipient/CreateRecipientDto';
 import { UpdateRecipientDto } from '../dtos/recipient/UpdateRecipientDto';
-import { UniqueValidationUtils } from '../../shared/utils/uniqueValidationUtils';
-import { ApplicationError } from '../../shared/errors/ApplicationError';
+import { UniqueValidationUtils } from '../../infrastructure/shared/utils/uniqueValidationUtils';
+import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 import { ErrorDetail } from '../../@types/error-types';
 
 @injectable()

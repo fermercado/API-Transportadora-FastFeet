@@ -3,8 +3,8 @@ import { IUserRepository } from '../../domain/repositories/IUserRepository';
 import { UserValidator } from '../../domain/validators/UserValidator';
 import { CreateUserDto } from '../dtos/user/CreateUserDto';
 import { UpdateUserDto } from '../dtos/user/UpdateUserDto';
-import { UniqueValidationUtils } from '../../shared/utils/uniqueValidationUtils';
-import { ApplicationError } from '../../shared/errors/ApplicationError';
+import { UniqueValidationUtils } from '../../infrastructure/shared/utils/uniqueValidationUtils';
+import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 import { ZodIssue } from 'zod';
 import { ErrorDetail } from '../../@types/error-types';
 
