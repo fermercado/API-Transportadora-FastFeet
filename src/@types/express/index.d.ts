@@ -1,4 +1,3 @@
-import express from 'express';
 import { JwtPayload } from '../../application/interfaces/IAuthService';
 
 declare global {
