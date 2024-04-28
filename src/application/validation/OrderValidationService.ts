@@ -11,6 +11,7 @@ import { UpdateRecipientDto } from '../dtos/recipient/UpdateRecipientDto';
 import { OrderStatus } from '../../domain/enums/OrderStatus';
 import { getDistance } from 'geolib';
 import { ExternalServices } from '../../infrastructure/externalService/ExternalService';
+import { UpdateOrderDto } from '../dtos/order/UpdateOrderDto';
 
 @injectable()
 export class OrderValidationService {
@@ -91,6 +92,25 @@ export class OrderValidationService {
       ];
       throw new ApplicationError('Order not found', 404, true, errorDetails);
     }
+    return order;
+  }
+
+  async validateOrderUpdate(
+    id: string,
+    updateDto: UpdateOrderDto,
+  ): Promise<Order> {
+    const order = await this.validateOrderExistence(id);
+
+    if (updateDto.recipientId) {
+      order.recipient = await this.validateRecipient(updateDto.recipientId);
+    }
+
+    if (updateDto.deliverymanId) {
+      order.deliveryman = await this.validateDeliveryman(
+        updateDto.deliverymanId,
+      );
+    }
+
     return order;
   }
 

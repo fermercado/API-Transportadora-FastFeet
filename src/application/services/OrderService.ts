@@ -73,20 +73,10 @@ export class OrderService {
     id: string,
     updateOrderDto: UpdateOrderDto,
   ): Promise<Order> {
-    const order = await this.orderValidationService.validateOrderExistence(id);
-    if (updateOrderDto.recipientId) {
-      order.recipient = await this.orderValidationService.validateRecipient(
-        updateOrderDto.recipientId,
-      );
-    }
-    if (updateOrderDto.deliverymanId) {
-      order.deliveryman = await this.orderValidationService.validateDeliveryman(
-        updateOrderDto.deliverymanId,
-      );
-    }
-    if (updateOrderDto.trackingCode) {
-      order.trackingCode = updateOrderDto.trackingCode;
-    }
+    const order = await this.orderValidationService.validateOrderUpdate(
+      id,
+      updateOrderDto,
+    );
     return await this.orderRepository.save(order);
   }
 

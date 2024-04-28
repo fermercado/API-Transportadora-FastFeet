@@ -4,7 +4,6 @@ import { UserValidationService } from '../validation/UserValidationService';
 import { User, UserWithoutPassword } from '../../domain/entities/User';
 import { CreateUserDto } from '../dtos/user/CreateUserDto';
 import { UpdateUserDto } from '../dtos/user/UpdateUserDto';
-import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 import bcrypt from 'bcrypt';
 
 @injectable()
@@ -30,22 +29,11 @@ export class UserService {
     id: string,
     userData: UpdateUserDto,
   ): Promise<UserWithoutPassword> {
-    await this.userValidationService.validateUpdateData(id, userData);
-
-    const { confirmPassword, ...updateData } = userData;
-
-    if (updateData.password && confirmPassword !== updateData.password) {
-      throw new ApplicationError(
-        'Password and confirm password do not match',
-        400,
-      );
+    if (userData.password) {
+      userData.password = await bcrypt.hash(userData.password, 10);
     }
 
-    if (updateData.password) {
-      updateData.password = await bcrypt.hash(updateData.password, 10);
-    }
-
-    const updatedUser = await this.userRepository.update(id, updateData);
+    const updatedUser = await this.userRepository.update(id, userData);
     return this.omitPassword(updatedUser);
   }
 

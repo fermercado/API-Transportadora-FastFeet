@@ -3,14 +3,16 @@ import { CommonValidations } from './commonValidations';
 
 export class UserValidator {
   static createBaseSchema() {
-    return z.object({
-      cpf: CommonValidations.createCpfValidation(),
-      firstName: CommonValidations.createNameValidation('First Name'),
-      lastName: CommonValidations.createNameValidation('Last Name'),
-      password: CommonValidations.createPasswordValidation(),
-      role: z.union([z.literal('admin'), z.literal('deliveryman')]),
-      email: CommonValidations.createEmailValidation(),
-    });
+    return z
+      .object({
+        cpf: CommonValidations.createCpfValidation(),
+        firstName: CommonValidations.createNameValidation('First Name'),
+        lastName: CommonValidations.createNameValidation('Last Name'),
+        password: CommonValidations.createPasswordValidation(),
+        role: z.union([z.literal('admin'), z.literal('deliveryman')]),
+        email: CommonValidations.createEmailValidation(),
+      })
+      .strict();
   }
 
   public static get validateCreateUser() {
@@ -26,33 +28,23 @@ export class UserValidator {
 
   public static get validateUpdateUser() {
     return UserValidator.createBaseSchema()
-      .partial()
+      .partial() // Permite que campos sejam opcionais
       .extend({
         confirmPassword: z.string().optional(),
       })
       .refine(
         (data) => {
+          // Exigir confirmPassword quando password é fornecido
           if (data.password) {
             return (
               data.confirmPassword && data.password === data.confirmPassword
             );
           }
-          return true;
+          return true; // Nenhuma verificação necessária se password não está presente
         },
         {
-          message: 'Passwords don t match',
+          message: 'Passwords don’t match',
           path: ['confirmPassword'],
-        },
-      )
-      .refine(
-        (data) => {
-          const isEmpty = Object.values(data).some(
-            (value) => typeof value === 'string' && value.trim() === '',
-          );
-          return !isEmpty;
-        },
-        {
-          message: 'Fields provided cannot be empty',
         },
       );
   }
