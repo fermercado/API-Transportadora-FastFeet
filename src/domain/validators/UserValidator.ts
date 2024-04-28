@@ -28,19 +28,18 @@ export class UserValidator {
 
   public static get validateUpdateUser() {
     return UserValidator.createBaseSchema()
-      .partial() // Permite que campos sejam opcionais
+      .partial()
       .extend({
         confirmPassword: z.string().optional(),
       })
       .refine(
         (data) => {
-          // Exigir confirmPassword quando password é fornecido
           if (data.password) {
             return (
               data.confirmPassword && data.password === data.confirmPassword
             );
           }
-          return true; // Nenhuma verificação necessária se password não está presente
+          return true;
         },
         {
           message: 'Passwords don’t match',
