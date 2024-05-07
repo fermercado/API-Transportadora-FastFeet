@@ -3,16 +3,14 @@ import { CommonValidations } from './commonValidations';
 
 export class UserValidator {
   static createBaseSchema() {
-    return z
-      .object({
-        cpf: CommonValidations.createCpfValidation(),
-        firstName: CommonValidations.createNameValidation('First Name'),
-        lastName: CommonValidations.createNameValidation('Last Name'),
-        password: CommonValidations.createPasswordValidation(),
-        role: z.union([z.literal('admin'), z.literal('deliveryman')]),
-        email: CommonValidations.createEmailValidation(),
-      })
-      .strict();
+    return z.object({
+      cpf: CommonValidations.createCpfValidation(),
+      firstName: CommonValidations.createNameValidation('First Name'),
+      lastName: CommonValidations.createNameValidation('Last Name'),
+      password: CommonValidations.createPasswordValidation(),
+      role: z.union([z.literal('admin'), z.literal('deliveryman')]),
+      email: CommonValidations.createEmailValidation(),
+    });
   }
 
   public static get validateCreateUser() {
