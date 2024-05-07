@@ -3,6 +3,7 @@ import { IRecipientRepository } from '../../domain/repositories/IRecipientReposi
 import { RecipientRepository } from '../orm/repositories/RecipientRepository';
 import { RecipientService } from '../../application/services/RecipientService';
 import { RecipientValidationService } from '../../application/validation/RecipientValidationService';
+import { RecipientMapper } from '../../application/mappers/RecipientMapper';
 
 container.registerSingleton<IRecipientRepository>(
   'IRecipientRepository',
@@ -17,5 +18,6 @@ container.registerSingleton(
   RecipientValidationService,
 );
 container.registerSingleton;
+container.registerSingleton('RecipientMapper', RecipientMapper);
 
 export { container } from 'tsyringe';
