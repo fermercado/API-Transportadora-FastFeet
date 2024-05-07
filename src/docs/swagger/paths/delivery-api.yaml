@@ -1,0 +1,84 @@
+openapi: 3.0.0
+info:
+  title: Delivery API
+  description: API for managing deliveries
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+paths:
+  paths:
+  /api/v1/deliveries:
+    get:
+      summary: List deliveries for a deliveryman
+      security:
+        - bearerAuth: []
+      tags:
+        - Delivery
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum:
+              - pending
+              - awaiting_pickup
+              - picked_up
+              - delivered
+              - returned
+          description: Filter orders by status
+      responses:
+        '200':
+          description: Successfully retrieved list of deliveries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderResponseDto'
+
+
+  /api/v1/deliveries/nearby:
+    post:
+      summary: Find nearby deliveries based on zip code
+      security:
+        - bearerAuth: []
+      tags:
+        - Delivery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryLocationDto'
+      responses:
+        '200':
+          description: Successfully retrieved nearby deliveries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    order:
+                      $ref: '#/components/schemas/OrderResponseDto'
+                    distance:
+                      type: string
+                      description: Distance from the deliveryman's current location in kilometers
+
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    DeliveryLocationDto:
+      type: object
+      required:
+        - zipCode
+      properties:
+        zipCode:
+          type: string
