@@ -1,0 +1,238 @@
+openapi: 3.0.0
+info:
+  title: Recipient API
+  description: API for managing recipients within a delivery management system.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+
+paths:
+  /api/v1/recipients:
+    post:
+      summary: Create a new recipient
+      security:
+        - bearerAuth: []
+      tags:
+        - Recipient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRecipientDto'
+      responses:
+        '201':
+          description: Recipient created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipientResponseDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access restricted to administrators
+    get:
+      summary: List all recipients
+      security:
+        - bearerAuth: []
+      tags:
+        - Recipient 
+      responses:
+        '200':
+          description: Successfully retrieved list of all recipients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipientResponseDto'
+        '403':
+          description: Access restricted to administrators
+  /api/v1/recipients/{id}:
+    put:
+      summary: Update a recipient
+      security:
+        - bearerAuth: []
+      tags:
+        - Recipient
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRecipientDto'
+      responses:
+        '200':
+          description: Recipient updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipientResponseDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Recipient not found
+        '403':
+          description: Access restricted to administrators
+    get:
+      summary: Get a recipient by ID
+      security:
+        - bearerAuth: []
+      tags:
+        - Recipient
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully retrieved recipient details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipientResponseDto'
+        '404':
+          description: Recipient not found
+        '403':
+          description: Access restricted to administrators
+    delete:
+      summary: Delete a recipient
+      security:
+        - bearerAuth: []
+      tags:
+        - Recipient
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Recipient deleted successfully
+        '404':
+          description: Recipient not found
+        '403':
+          description: Access restricted to administrators
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    CreateRecipientDto:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - cpf
+        - email
+        - zipCode
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        cpf:
+          type: string
+        email:
+          type: string
+        zipCode:
+          type: string
+        complement:
+          type: string
+        number:
+          type: integer
+
+    UpdateRecipientDto:
+      type: object
+      properties:
+        email:
+          type: string
+        cpf:
+          type: string
+        zipCode:
+          type: string
+        street:
+          type: string
+        number:
+          type: integer
+        complement:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        neighborhood:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+    RecipientResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        street:
+          type: string
+        number:
+          type: integer
+        complement:
+          type: string
+        neighborhood:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zipCode:
+          type: string
+        email:
+          type: string
+        cpf:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
