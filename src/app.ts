@@ -5,10 +5,17 @@ import orderRoutes from './ui/routes/orderRoutes';
 import deliveryRoutes from './ui/routes/deliveryRoutes';
 import authRoutes from './ui/routes/authRoutes';
 import { errorHandler } from './ui/middleware/ErrorHandler';
+import setupSwagger from './swagger';
 
 export function createApp(): Express {
   const app = express();
   app.use(express.json());
+
+  app.get('/', (_req, res) => {
+    res.redirect('/api-docs/#/');
+  });
+
+  setupSwagger(app);
 
   app.use(authRoutes);
   app.use(userRoutes);
