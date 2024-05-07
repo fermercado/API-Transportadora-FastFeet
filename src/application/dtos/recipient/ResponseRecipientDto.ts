@@ -11,4 +11,6 @@ export class RecipientResponseDto {
   state!: string;
   zipCode!: string;
   email!: string;
+  latitude!: number;
+  longitude!: number;
 }
