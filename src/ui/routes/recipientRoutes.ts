@@ -14,7 +14,7 @@ router.post(
   AuthMiddleware.verifyToken,
   AdminOnlyMiddleware.checkAdminRole,
   validateRequest(RecipientValidator.createSchema),
-  (req, res, next) => recipientController.createRecipient(req, res, next),
+  recipientController.createRecipient.bind(recipientController),
 );
 
 router.put(
@@ -22,28 +22,28 @@ router.put(
   AuthMiddleware.verifyToken,
   AdminOnlyMiddleware.checkAdminRole,
   validateRequest(RecipientValidator.updateSchema),
-  (req, res, next) => recipientController.updateRecipient(req, res, next),
+  recipientController.updateRecipient.bind(recipientController),
 );
 
 router.delete(
   '/api/v1/recipients/:id',
   AuthMiddleware.verifyToken,
   AdminOnlyMiddleware.checkAdminRole,
-  (req, res, next) => recipientController.deleteRecipient(req, res, next),
+  recipientController.deleteRecipient.bind(recipientController),
 );
 
 router.get(
   '/api/v1/recipients/:id',
   AuthMiddleware.verifyToken,
   AdminOnlyMiddleware.checkAdminRole,
-  (req, res, next) => recipientController.getRecipientById(req, res, next),
+  recipientController.getRecipientById.bind(recipientController),
 );
 
 router.get(
   '/api/v1/recipients',
   AuthMiddleware.verifyToken,
   AdminOnlyMiddleware.checkAdminRole,
-  (req, res, next) => recipientController.getAllRecipients(req, res, next),
+  recipientController.getAllRecipients.bind(recipientController),
 );
 
 export default router;

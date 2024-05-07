@@ -1,10 +1,12 @@
 import { injectable, inject } from 'tsyringe';
 import { IRecipientRepository } from '../../domain/repositories/IRecipientRepository';
-import { Recipient } from '../../domain/entities/Recipient';
 import { ExternalServices } from '../../infrastructure/externalService/ExternalService';
 import { CreateRecipientDto } from '../dtos/recipient/CreateRecipientDto';
 import { UpdateRecipientDto } from '../dtos/recipient/UpdateRecipientDto';
 import { RecipientValidationService } from '../validation/RecipientValidationService';
+import { RecipientMapper } from '../mappers/RecipientMapper';
+import { RecipientResponseDto } from '../dtos/recipient/ResponseRecipientDto';
+import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 
 @injectable()
 export class RecipientService {
@@ -13,87 +15,84 @@ export class RecipientService {
     private recipientRepository: IRecipientRepository,
     @inject('RecipientValidationService')
     private recipientValidationService: RecipientValidationService,
+    @inject('RecipientMapper')
+    private recipientMapper: RecipientMapper,
   ) {}
 
   public async createRecipient(
     recipientData: CreateRecipientDto,
-  ): Promise<Recipient> {
+  ): Promise<RecipientResponseDto> {
     await this.recipientValidationService.validateCreateData(recipientData);
     await this.recipientValidationService.validateUniqueness(recipientData);
 
     const newRecipientData = await this.processAddressInfo(recipientData);
     const newRecipient =
       await this.recipientRepository.create(newRecipientData);
-    return newRecipient;
+
+    return this.recipientMapper.toDto(newRecipient);
   }
 
   public async updateRecipient(
     id: string,
     recipientData: UpdateRecipientDto,
-  ): Promise<Recipient> {
+  ): Promise<RecipientResponseDto> {
     const existingRecipient = await this.recipientRepository.findById(id);
     if (!existingRecipient) {
-      throw new Error('Recipient not found');
+      throw new ApplicationError('Recipient not found', 404, true);
     }
 
     await this.recipientValidationService.validateUpdateData(recipientData, id);
     await this.recipientValidationService.validateUniqueness(recipientData, id);
 
-    if (
-      recipientData.zipCode &&
-      recipientData.zipCode !== existingRecipient.zipCode
-    ) {
-      const addressData = await this.processAddressInfo(recipientData);
-      Object.assign(recipientData, addressData);
-    }
+    const updatedData = await this.processAddressInfo({
+      ...existingRecipient,
+      ...recipientData,
+    });
+    Object.assign(existingRecipient, updatedData);
 
     const updatedRecipient = await this.recipientRepository.update(
       id,
-      recipientData,
+      existingRecipient,
     );
-    return updatedRecipient;
+
+    return this.recipientMapper.toDto(updatedRecipient);
   }
 
   public async deleteRecipient(id: string): Promise<void> {
     const recipient = await this.recipientRepository.findById(id);
     if (!recipient) {
-      throw new Error('Recipient not found');
+      throw new ApplicationError('Recipient not found', 404, true);
     }
     await this.recipientRepository.remove(recipient);
   }
 
-  public async findRecipientById(id: string): Promise<Recipient | undefined> {
-    return this.recipientRepository.findById(id);
+  public async findRecipientById(
+    id: string,
+  ): Promise<RecipientResponseDto | undefined> {
+    const recipient = await this.recipientRepository.findById(id);
+    if (!recipient) return undefined;
+    return this.recipientMapper.toDto(recipient);
   }
 
-  public async listRecipients(): Promise<Recipient[]> {
-    return this.recipientRepository.find();
+  public async listRecipients(): Promise<RecipientResponseDto[]> {
+    const recipients = await this.recipientRepository.find();
+    return recipients.map((recipient) => this.recipientMapper.toDto(recipient));
   }
 
   private async processAddressInfo(
     recipientData: CreateRecipientDto | UpdateRecipientDto,
   ): Promise<CreateRecipientDto | UpdateRecipientDto> {
-    const zipCode = recipientData.zipCode;
-    if (!zipCode) {
-      throw new Error('Zip code is required');
-    }
+    this.recipientValidationService.validateZipCode(
+      recipientData.zipCode as string,
+    );
 
-    const addressInfo = await ExternalServices.getAddressByZipCode(zipCode);
-    const missingFields = [];
-
-    if (!addressInfo.logradouro && !recipientData.street)
-      missingFields.push('street');
-    if (!addressInfo.bairro && !recipientData.neighborhood)
-      missingFields.push('neighborhood');
-    if (!addressInfo.localidade && !recipientData.city)
-      missingFields.push('city');
-    if (!addressInfo.uf && !recipientData.state) missingFields.push('state');
-
-    if (missingFields.length > 0) {
-      throw new Error(
-        `Some address information was not found. Please complete the following data: ${missingFields.join(', ')}.`,
-      );
-    }
+    const addressInfo = await ExternalServices.getAddressByZipCode(
+      recipientData.zipCode as string,
+    );
+    await this.recipientValidationService.validateAddressCompleteness(
+      addressInfo,
+      recipientData,
+    );
 
     return {
       ...recipientData,
