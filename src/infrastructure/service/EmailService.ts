@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import 'dotenv/config';
+import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 
 export class EmailService {
   private transporter;
@@ -30,6 +31,7 @@ export class EmailService {
       console.log('E-mail enviado com sucesso');
     } catch (error) {
       console.error('Erro ao enviar e-mail', error);
+      throw new ApplicationError('Falha ao enviar e-mail', 500, true);
     }
   }
 }
