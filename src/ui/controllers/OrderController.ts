@@ -1,235 +1,339 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { inject, injectable } from 'tsyringe';
 import { OrderService } from '../../application/services/OrderService';
 import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
-import { OrderResponseDto } from '../../application/dtos/order/ResponseOrderDto';
-import { ErrorDetail } from '../../@types/error-types';
-import { Order } from '../../domain/entities/Order';
+import { OrderStatusValidator } from '../../infrastructure/shared/utils/validateOrderStatus';
+import { OrderStatus } from '../../domain/enums/OrderStatus';
 
 @injectable()
 export class OrderController {
   constructor(@inject('OrderService') private orderService: OrderService) {}
 
-  async createOrder(req: Request, res: Response): Promise<Response> {
+  async createOrder(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      const order = await this.orderService.createOrder(req.body);
-      return res.status(201).json(order);
-    } catch (error) {
-      if (error instanceof ApplicationError) {
-        return res.status(error.statusCode).json({
-          error: error.message,
-          details: error.details as ErrorDetail[],
-        });
-      }
-      console.error('Unexpected error occurred:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred' });
-    }
-  }
-
-  async updateOrder(req: Request, res: Response): Promise<Response> {
-    const { id } = req.params;
-    try {
-      const order = await this.orderService.updateOrder(id, req.body);
-      return res.status(200).json(order);
-    } catch (error) {
-      if (error instanceof ApplicationError) {
-        return res.status(error.statusCode).json({
-          error: error.message,
-          details: error.details as ErrorDetail[],
-        });
-      }
-      console.error('Unexpected error occurred:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred' });
-    }
-  }
-
-  async deleteOrder(req: Request, res: Response): Promise<Response> {
-    const { id } = req.params;
-    try {
-      await this.orderService.deleteOrder(id);
-      return res.status(204).send();
-    } catch (error) {
-      if (error instanceof ApplicationError) {
-        return res.status(error.statusCode).json({
-          message: error.message,
-          details: error.details as ErrorDetail[],
-        });
-      }
-      console.error('Unexpected error occurred:', error);
-      return res.status(500).json({ message: 'Internal Server Error' });
-    }
-  }
-
-  async getOrderById(req: Request, res: Response): Promise<Response> {
-    const { id } = req.params;
-    try {
-      const order = await this.orderService.getOrderById(id);
-      if (!order) {
-        return res.status(404).json({ message: 'Order not found' });
-      }
-      return res.json(this.mapOrderToResponseDto(order));
-    } catch (error) {
-      if (error instanceof ApplicationError) {
-        return res.status(error.statusCode).json({
-          message: error.message,
-          details: error.details as ErrorDetail[],
-        });
-      }
-      console.error('Unexpected error occurred:', error);
-      return res.status(500).json({ message: 'Internal Server Error' });
-    }
-  }
-
-  async listOrders(_req: Request, res: Response): Promise<Response> {
-    try {
-      const orders = await this.orderService.listOrders();
-      return res.json(orders);
-    } catch (error) {
-      if (error instanceof ApplicationError) {
-        return res.status(error.statusCode).json({
-          message: error.message,
-          details: error.details as ErrorDetail[],
-        });
-      }
-      console.error('Unexpected error occurred:', error);
-      return res.status(500).json({ message: 'Internal Server Error' });
-    }
-  }
-
-  async markOrderAsWaiting(req: Request, res: Response): Promise<Response> {
-    const { id } = req.params;
-    try {
-      const order = await this.orderService.markOrderAsWaiting(id);
-      return res.json(order);
+      const orderDto = await this.orderService.createOrder(req.body);
+      res.status(201).json(orderDto);
     } catch (error: any) {
-      console.error('Error marking order as waiting:', error);
-      return res.status(400).json({ message: error.message });
+      if (error instanceof ApplicationError) {
+        next(error);
+      } else {
+        next(
+          new ApplicationError('Failed to create order', 500, true, [
+            { key: 'internal', value: error.message || 'Unknown error' },
+          ]),
+        );
+      }
     }
   }
 
-  async pickupOrder(req: Request, res: Response): Promise<Response> {
-    const { id } = req.params;
-    const deliverymanId = req.user.id;
+  async updateOrder(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      const order = await this.orderService.pickupOrder(id, deliverymanId);
-      return res.json(order);
-    } catch (error: any) {
-      console.error('Error picking up order:', error);
-      return res.status(400).json({ message: error.message });
-    }
-  }
-
-  async markOrderAsDelivered(req: Request, res: Response): Promise<Response> {
-    const { id } = req.params;
-    const deliverymanId = req.user.id;
-    if (!req.file) {
-      return res
-        .status(400)
-        .json({ message: 'Delivery photo file is required.' });
-    }
-    const imageFile = req.file as Express.Multer.File;
-    try {
-      const order = await this.orderService.markOrderAsDelivered(
-        id,
-        deliverymanId,
-        imageFile,
+      const orderDto = await this.orderService.updateOrder(
+        req.params.id,
+        req.body,
       );
-      return res.json(order);
+      res.status(200).json(orderDto);
     } catch (error: any) {
-      console.error('Error marking order as delivered:', error);
-      return res.status(400).json({ message: error.message });
+      if (error instanceof ApplicationError) {
+        next(error);
+      } else {
+        next(
+          new ApplicationError('Failed to update order', 500, true, [
+            {
+              key: 'internal',
+              value: error.message || 'Error during order update',
+            },
+          ]),
+        );
+      }
     }
   }
 
-  async returnOrder(req: Request, res: Response): Promise<Response> {
-    const { id } = req.params;
-    const deliverymanId = req.user.id;
+  async deleteOrder(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      const order = await this.orderService.returnOrder(id, deliverymanId);
-      return res.json(order);
+      await this.orderService.deleteOrder(req.params.id);
+      res.status(204).send();
     } catch (error: any) {
-      console.error('Error returning order:', error);
-      return res.status(400).json({ message: error.message });
+      if (error instanceof ApplicationError) {
+        next(error);
+      } else {
+        next(
+          new ApplicationError('Failed to delete order', 500, true, [
+            {
+              key: 'internal',
+              value: error.message || 'Error during order deletion',
+            },
+          ]),
+        );
+      }
+    }
+  }
+
+  async getOrderById(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const orderDto = await this.orderService.getOrderById(req.params.id);
+      if (!orderDto) {
+        throw new ApplicationError('Order not found', 404, true);
+      }
+      res.json(orderDto);
+    } catch (error: any) {
+      if (error instanceof ApplicationError) {
+        next(error);
+      } else {
+        next(
+          new ApplicationError('Failed to retrieve order', 500, true, [
+            {
+              key: 'internal',
+              value: error.message || 'Error during retrieval of order',
+            },
+          ]),
+        );
+      }
+    }
+  }
+
+  async listOrders(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const status = OrderStatusValidator.validate(req.query.status);
+      const ordersDto = await this.orderService.listOrders(status);
+      res.json(ordersDto);
+    } catch (error: any) {
+      if (error instanceof ApplicationError) {
+        next(error);
+      } else {
+        next(
+          new ApplicationError('Failed to list orders', 500, true, [
+            {
+              key: 'internal',
+              value: error.message || 'Error during listing orders',
+            },
+          ]),
+        );
+      }
+    }
+  }
+
+  async markOrderAsWaiting(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const orderDto = await this.orderService.markOrderAsWaiting(
+        req.params.id,
+        req.user.id,
+        req.user.role,
+      );
+      res.json(orderDto);
+    } catch (error: any) {
+      if (error instanceof ApplicationError) {
+        next(error);
+      } else {
+        next(
+          new ApplicationError('Failed to mark order as waiting', 500, true, [
+            {
+              key: 'internal',
+              value: error.message || 'Error during order status change',
+            },
+          ]),
+        );
+      }
+    }
+  }
+
+  async pickupOrder(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const orderDto = await this.orderService.pickupOrder(
+        req.params.id,
+        req.user.id,
+        req.user.role,
+      );
+      res.json(orderDto);
+    } catch (error: any) {
+      if (error instanceof ApplicationError) {
+        next(error);
+      } else {
+        next(
+          new ApplicationError('Failed to pickup order', 500, true, [
+            {
+              key: 'internal',
+              value: error.message || 'Error during picking up the order',
+            },
+          ]),
+        );
+      }
+    }
+  }
+
+  async markOrderAsDelivered(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      if (!req.file) {
+        throw new ApplicationError(
+          'Delivery photo file is required.',
+          400,
+          true,
+        );
+      }
+      const orderDto = await this.orderService.markOrderAsDelivered(
+        req.params.id,
+        req.user.id,
+        req.file,
+      );
+      res.json(orderDto);
+    } catch (error: any) {
+      if (error instanceof ApplicationError) {
+        next(error);
+      } else {
+        next(
+          new ApplicationError('Failed to mark order as delivered', 500, true, [
+            {
+              key: 'internal',
+              value: error.message || 'Error during order delivery',
+            },
+          ]),
+        );
+      }
+    }
+  }
+
+  async returnOrder(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const orderDto = await this.orderService.returnOrder(
+        req.params.id,
+        req.user.id,
+        req.user.role,
+      );
+      res.json(orderDto);
+    } catch (error: any) {
+      if (error instanceof ApplicationError) {
+        next(error);
+      } else {
+        next(
+          new ApplicationError('Failed to return order', 500, true, [
+            {
+              key: 'internal',
+              value: error.message || 'Error during returning the order',
+            },
+          ]),
+        );
+      }
     }
   }
 
   async listDeliveriesForDeliveryman(
     req: Request,
     res: Response,
-  ): Promise<Response> {
-    const deliverymanId = req.user.id;
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      const orders =
-        await this.orderService.findDeliveriesForDeliverer(deliverymanId);
-
-      const ordersDto = orders.map((order) =>
-        this.mapOrderToResponseDto(order),
+      const deliverymanId = req.params.deliverymanId;
+      const status = req.query.status as OrderStatus | undefined;
+      const ordersDto = await this.orderService.findDeliveriesForDeliverer(
+        deliverymanId,
+        status,
       );
-
-      return res.json(ordersDto);
+      res.json(ordersDto);
     } catch (error: any) {
-      console.error('Error listing deliveries for deliveryman:', error);
-      return res.status(500).json({ message: error.message });
+      if (error instanceof ApplicationError) {
+        next(error);
+      } else {
+        next(
+          new ApplicationError('Failed to list deliveries', 500, true, [
+            {
+              key: 'internal',
+              value: error.message || 'Error during listing deliveries',
+            },
+          ]),
+        );
+      }
     }
   }
 
-  async findNearbyDeliveries(req: Request, res: Response): Promise<Response> {
-    const deliverymanId = req.user.id;
-    const { zipCode } = req.body;
+  async listOwnDeliveries(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const deliverymanId = req.user.id;
+      const status = req.query.status as OrderStatus | undefined;
+      const ordersDto = await this.orderService.findDeliveriesForDeliverer(
+        deliverymanId,
+        status,
+      );
+      res.json(ordersDto);
+    } catch (error: any) {
+      if (error instanceof ApplicationError) {
+        next(error);
+      } else {
+        next(
+          new ApplicationError('Failed to list own deliveries', 500, true, [
+            {
+              key: 'internal',
+              value: error.message || 'Error during listing own deliveries',
+            },
+          ]),
+        );
+      }
+    }
+  }
+
+  async findNearbyDeliveries(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const deliveries = await this.orderService.findNearbyDeliveries(
-        deliverymanId,
-        zipCode,
+        req.user.id,
+        req.body.zipCode,
       );
-
-      const deliveriesDto = deliveries.map((delivery) => {
-        return {
-          ...delivery,
-          order: this.mapOrderToResponseDto(delivery.order),
-        };
-      });
-
-      return res.json(deliveriesDto);
+      res.json(deliveries);
     } catch (error: any) {
-      console.error('Error finding nearby deliveries:', error);
-      return res.status(500).json({ message: error.message });
+      if (error instanceof ApplicationError) {
+        next(error);
+      } else {
+        next(
+          new ApplicationError('Failed to find nearby deliveries', 500, true, [
+            {
+              key: 'internal',
+              value: error.message || 'Error during finding deliveries',
+            },
+          ]),
+        );
+      }
     }
-  }
-
-  private mapOrderToResponseDto(order: Order): OrderResponseDto {
-    return {
-      id: order.id,
-      trackingCode: order.trackingCode,
-      status: order.status,
-      deliveryPhoto: order.deliveryPhoto,
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt,
-      recipient: order.recipient
-        ? {
-            id: order.recipient.id,
-            firstName: order.recipient.firstName,
-            lastName: order.recipient.lastName,
-            email: order.recipient.email,
-            cpf: order.recipient.cpf,
-            zipCode: order.recipient.zipCode,
-            street: order.recipient.street,
-            number: order.recipient.number,
-            complement: order.recipient.complement || '',
-            neighborhood: order.recipient.neighborhood,
-            city: order.recipient.city,
-            state: order.recipient.state,
-          }
-        : undefined,
-      deliveryman: order.deliveryman
-        ? {
-            id: order.deliveryman.id,
-            firstName: order.deliveryman.firstName,
-            lastName: order.deliveryman.lastName,
-            email: order.deliveryman.email,
-            cpf: order.deliveryman.cpf,
-            role: order.deliveryman.role,
-          }
-        : undefined,
-    };
   }
 }
