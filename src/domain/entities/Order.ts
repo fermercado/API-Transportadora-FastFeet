@@ -41,4 +41,16 @@ export class Order {
 
   @UpdateDateColumn()
   updatedAt!: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  awaitingPickupAt?: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  pickedUpAt?: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  deliveredAt?: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  returnedAt?: Date;
 }

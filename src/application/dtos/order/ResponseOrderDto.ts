@@ -6,8 +6,12 @@ export class OrderResponseDto {
   trackingCode!: string;
   status!: string;
   deliveryPhoto?: string;
-  createdAt!: Date;
-  updatedAt!: Date;
   recipient?: RecipientResponseDto;
   deliveryman?: ResponseUserDto;
+  createdAt!: string;
+  updatedAt!: string;
+  awaitingPickupAt?: string;
+  pickedUpAt?: string;
+  deliveredAt?: string;
+  returnedAt?: string;
 }

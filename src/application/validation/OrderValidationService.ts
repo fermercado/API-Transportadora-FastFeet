@@ -5,21 +5,20 @@ import { User } from '../../domain/entities/User';
 import { Order } from '../../domain/entities/Order';
 import { IOrderRepository } from '../../domain/repositories/IOrderRepository';
 import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
-import { ErrorDetail } from '../../@types/error-types';
 import { CreateRecipientDto } from '../dtos/recipient/CreateRecipientDto';
 import { UpdateRecipientDto } from '../dtos/recipient/UpdateRecipientDto';
 import { OrderStatus } from '../../domain/enums/OrderStatus';
 import { getDistance } from 'geolib';
 import { ExternalServices } from '../../infrastructure/externalService/ExternalService';
 import { UpdateOrderDto } from '../dtos/order/UpdateOrderDto';
+import OrderValidator from '../../domain/validators/OrderValidator';
+import { UserRole } from '../../domain/enums/UserRole';
 
 @injectable()
 export class OrderValidationService {
   constructor(
-    @inject('DataSource')
-    private dataSource: DataSource,
-    @inject('IOrderRepository')
-    private orderRepository: IOrderRepository,
+    @inject('DataSource') private dataSource: DataSource,
+    @inject('IOrderRepository') private orderRepository: IOrderRepository,
   ) {}
 
   async validateRecipient(
@@ -30,18 +29,7 @@ export class OrderValidationService {
     const recipient = await recipientRepository.findOneBy({ id: recipientId });
 
     if (!recipient) {
-      const errorDetails: ErrorDetail[] = [
-        {
-          key: 'recipientId',
-          value: recipientId,
-        },
-      ];
-      throw new ApplicationError(
-        'Recipient not found',
-        404,
-        true,
-        errorDetails,
-      );
+      throw new ApplicationError('Recipient not found', 404);
     }
 
     if (
@@ -49,13 +37,7 @@ export class OrderValidationService {
       recipientDto.email &&
       recipient.email !== recipientDto.email
     ) {
-      const errorDetails: ErrorDetail[] = [
-        {
-          key: 'email',
-          value: recipientDto.email,
-        },
-      ];
-      throw new ApplicationError('Email mismatch', 400, true, errorDetails);
+      throw new ApplicationError('Email mismatch', 400);
     }
 
     return recipient;
@@ -64,50 +46,46 @@ export class OrderValidationService {
   async validateDeliveryman(deliverymanId: string): Promise<User> {
     const userRepository = this.dataSource.getRepository(User);
     const deliveryman = await userRepository.findOneBy({ id: deliverymanId });
+
     if (!deliveryman) {
-      const errorDetails: ErrorDetail[] = [
-        {
-          key: 'deliverymanId',
-          value: deliverymanId,
-        },
-      ];
-      throw new ApplicationError(
-        'Deliveryman not found',
-        404,
-        true,
-        errorDetails,
-      );
+      throw new ApplicationError('Deliveryman not found', 404);
     }
+
+    if (deliveryman.role !== UserRole.Deliveryman) {
+      throw new ApplicationError('User is not a deliveryman', 403);
+    }
+
     return deliveryman;
   }
 
   async validateOrderExistence(id: string): Promise<Order> {
     const order = await this.orderRepository.findById(id);
     if (!order) {
-      const errorDetails: ErrorDetail[] = [
-        {
-          key: 'orderId',
-          value: id,
-        },
-      ];
-      throw new ApplicationError('Order not found', 404, true, errorDetails);
+      throw new ApplicationError('Order not found', 404);
     }
     return order;
   }
 
-  async validateOrderUpdate(
+  async validateAndUpdateOrderDetails(
     id: string,
     updateDto: UpdateOrderDto,
   ): Promise<Order> {
-    const order = await this.validateOrderExistence(id);
-
-    if (updateDto.recipientId) {
-      order.recipient = await this.validateRecipient(updateDto.recipientId);
+    const result = OrderValidator.updateOrderSchema.safeParse(updateDto);
+    if (!result.success) {
+      throw new ApplicationError(
+        `Validation failed: ${result.error.format()}`,
+        400,
+      );
     }
 
-    if (updateDto.deliverymanId) {
+    const order = await this.validateOrderExistence(id);
+
+    if (result.data.recipientId) {
+      order.recipient = await this.validateRecipient(result.data.recipientId);
+    }
+    if (result.data.deliverymanId) {
       order.deliveryman = await this.validateDeliveryman(
-        updateDto.deliverymanId,
+        result.data.deliverymanId,
       );
     }
 
@@ -117,13 +95,29 @@ export class OrderValidationService {
   async validateOrderTransition(
     orderId: string,
     nextStatus: OrderStatus,
+    deliverymanId: string,
+    userRole: UserRole,
   ): Promise<Order> {
     const order = await this.validateOrderExistence(orderId);
+
+    const isDeliveryman = order.deliveryman?.id === deliverymanId;
+
+    const isAdminAllowed =
+      userRole === UserRole.Admin &&
+      (nextStatus === OrderStatus.AwaitingPickup ||
+        nextStatus === OrderStatus.PickedUp);
+
+    if (!isDeliveryman && !isAdminAllowed) {
+      throw new ApplicationError(
+        'You do not have permission to update this order',
+        403,
+      );
+    }
+
     if (!this.isStatusTransitionValid(order.status, nextStatus)) {
       throw new ApplicationError(
         `Invalid status transition from ${order.status} to ${nextStatus}`,
         400,
-        true,
       );
     }
 
@@ -137,9 +131,12 @@ export class OrderValidationService {
     const transitions: { [key in OrderStatus]?: OrderStatus[] } = {
       [OrderStatus.Pending]: [OrderStatus.AwaitingPickup],
       [OrderStatus.AwaitingPickup]: [OrderStatus.PickedUp],
-      [OrderStatus.PickedUp]: [OrderStatus.Delivered],
+      [OrderStatus.PickedUp]: [OrderStatus.Delivered, OrderStatus.Returned],
       [OrderStatus.Delivered]: [],
-      [OrderStatus.Returned]: [OrderStatus.AwaitingPickup],
+      [OrderStatus.Returned]: [
+        OrderStatus.AwaitingPickup,
+        OrderStatus.PickedUp,
+      ],
     };
 
     return transitions[currentStatus]?.includes(nextStatus) ?? false;
@@ -155,14 +152,12 @@ export class OrderValidationService {
       throw new ApplicationError(
         'Only the assigned delivery person can mark the order as delivered',
         403,
-        true,
       );
     }
     if (!imageFile) {
       throw new ApplicationError(
         'A delivery photo is required to mark as delivered',
         400,
-        true,
       );
     }
     return order;
@@ -174,12 +169,19 @@ export class OrderValidationService {
     orderRepository: IOrderRepository,
   ): Promise<{ order: Order; distance: string }[]> {
     if (!zipCode) {
-      throw new Error('zipCode not provided');
+      throw new ApplicationError('Zip code not provided', 400);
+    }
+
+    const deliveries = await orderRepository.findByFilter({
+      deliverymanId: deliverymanId,
+    });
+
+    if (deliveries.length === 0) {
+      throw new ApplicationError('No deliveries found', 404);
     }
 
     const { latitude: originLat, longitude: originLng } =
       await ExternalServices.getAddressByZipCode(zipCode);
-    const deliveries = await orderRepository.findByDeliveryman(deliverymanId);
 
     const deliveriesWithDistance = deliveries
       .filter((order) => order.status !== OrderStatus.Delivered)
@@ -206,6 +208,10 @@ export class OrderValidationService {
         };
       })
       .filter(Boolean) as { order: Order; distance: string }[];
+
+    if (deliveriesWithDistance.length === 0) {
+      throw new ApplicationError('No nearby deliveries found', 404);
+    }
 
     return deliveriesWithDistance.sort((a, b) => {
       if (!a || !b) return 0;
