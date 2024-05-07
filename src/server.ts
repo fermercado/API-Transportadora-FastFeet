@@ -6,6 +6,8 @@ import './infrastructure/dependencyInjection/userDependencies';
 import './infrastructure/dependencyInjection/recipientDependencies';
 import './infrastructure/dependencyInjection/servicesDependencies';
 import './infrastructure/dependencyInjection/orderDependencias';
+import './infrastructure/dependencyInjection/trackingCodeDependencies';
+import './infrastructure/dependencyInjection/notificationDependencies';
 
 const PORT = process.env.PORT || 3000;
 
