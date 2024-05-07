@@ -1,10 +1,14 @@
 import { inject, injectable } from 'tsyringe';
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
 import { UserValidationService } from '../validation/UserValidationService';
-import { User, UserWithoutPassword } from '../../domain/entities/User';
+import { User } from '../../domain/entities/User';
 import { CreateUserDto } from '../dtos/user/CreateUserDto';
 import { UpdateUserDto } from '../dtos/user/UpdateUserDto';
+import { ResponseUserDto } from '../dtos/user/ResponseUserDto';
+import { UserMapper } from '../../application/mappers/UserMappers';
 import bcrypt from 'bcrypt';
+import { UserFilter } from '../../domain/interface/UserFilter';
+import { UserRole } from '../../domain/enums/UserRole';
 
 @injectable()
 export class UserService {
@@ -12,71 +16,72 @@ export class UserService {
     @inject('IUserRepository') private userRepository: IUserRepository,
     @inject('UserValidationService')
     private userValidationService: UserValidationService,
+    @inject('UserMapper') private userMapper: UserMapper,
   ) {}
 
-  public async createUser(
-    userData: CreateUserDto,
-  ): Promise<UserWithoutPassword> {
+  public async createUser(userData: CreateUserDto): Promise<ResponseUserDto> {
     await this.userValidationService.validateCreateData(userData);
-    const userToSave: Partial<User> = {
-      ...userData,
-    };
+    userData.password = await this.hashPassword(userData.password);
+    const userToSave: Partial<User> = { ...userData };
     const savedUser = await this.userRepository.create(userToSave);
-    return this.omitPassword(savedUser);
+    return this.userMapper.toResponseUserDto(savedUser);
   }
 
   public async updateUser(
     id: string,
     userData: UpdateUserDto,
-  ): Promise<UserWithoutPassword> {
+  ): Promise<ResponseUserDto> {
+    await this.userValidationService.validateUpdateData(id, userData);
     if (userData.password) {
-      userData.password = await bcrypt.hash(userData.password, 10);
+      userData.password = await this.hashPassword(userData.password);
     }
-
     const updatedUser = await this.userRepository.update(id, userData);
-    return this.omitPassword(updatedUser);
+    return this.userMapper.toResponseUserDto(updatedUser);
   }
 
-  public async deleteUser(id: string): Promise<void> {
+  public async deleteUser(id: string, loggedInUserId: string): Promise<void> {
     await this.userValidationService.validateUserExistence(id);
+    await this.userValidationService.validateDeleteSelfOperation(
+      id,
+      loggedInUserId,
+    );
     await this.userRepository.remove(id);
   }
 
-  public async findUserById(
-    id: string,
-  ): Promise<UserWithoutPassword | undefined> {
+  public async findUserById(id: string): Promise<ResponseUserDto | undefined> {
     await this.userValidationService.validateUserExistence(id);
     const user = await this.userRepository.findById(id);
     if (!user) return undefined;
-    return this.omitPassword(user);
+    return this.userMapper.toResponseUserDto(user);
   }
 
-  public async listUsers(): Promise<UserWithoutPassword[]> {
-    const users = await this.userRepository.findAll();
-    return users.map(this.omitPassword);
+  public async listUsers(role?: string): Promise<ResponseUserDto[]> {
+    let users: User[];
+    if (role) {
+      const validRole = Object.values(UserRole).includes(role as UserRole)
+        ? (role as UserRole)
+        : undefined;
+
+      const filter: UserFilter = { role: validRole };
+      users = await this.userRepository.findByFilter(filter);
+    } else {
+      users = await this.userRepository.findAll();
+    }
+    return users.map(this.userMapper.toResponseUserDto);
   }
 
   public async validateUser(
     cpf: string,
     password: string,
-  ): Promise<UserWithoutPassword | null> {
+  ): Promise<ResponseUserDto | null> {
     const user = await this.userRepository.findByCpf(cpf);
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return null;
     }
-    return this.omitPassword(user);
+    return this.userMapper.toResponseUserDto(user);
   }
 
-  private omitPassword(user: User): UserWithoutPassword {
-    return {
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      cpf: user.cpf,
-      email: user.email,
-      role: user.role,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
+  private async hashPassword(password: string): Promise<string> {
+    return await bcrypt.hash(password, 10);
   }
 }

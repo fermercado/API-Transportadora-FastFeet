@@ -64,15 +64,27 @@ export class UserValidationService {
     userData: CreateUserDto | UpdateUserDto,
     id?: string,
   ): Promise<void> {
-    await this.uniqueValidationUtils.checkUniqueEmail(
-      userData.email ?? '',
-      'user',
-      id,
-    );
-    await this.uniqueValidationUtils.checkUniqueCpf(
-      userData.cpf ?? '',
-      'user',
-      id,
-    );
+    if (userData.email) {
+      await this.uniqueValidationUtils.checkUniqueEmail(
+        userData.email,
+        'user',
+        id,
+      );
+    }
+    if (userData.cpf) {
+      await this.uniqueValidationUtils.checkUniqueCpf(userData.cpf, 'user', id);
+    }
+  }
+
+  public async validateDeleteSelfOperation(
+    userIdToDelete: string,
+    loggedInUserId: string,
+  ): Promise<void> {
+    if (userIdToDelete === loggedInUserId) {
+      const details: ErrorDetail[] = [
+        { key: 'deleteSelf', value: 'You cannot delete your own account.' },
+      ];
+      throw new ApplicationError('Forbidden operation', 403, true, details);
+    }
   }
 }
