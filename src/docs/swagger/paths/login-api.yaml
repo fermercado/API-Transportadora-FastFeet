@@ -1,0 +1,98 @@
+openapi: 3.0.0
+info:
+  title: Authentication API
+  description: API for user authentication
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+paths:
+  /api/v1/login:
+    post:
+      summary: Authenticate a user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cpf
+                - password
+              properties:
+                cpf:
+                  type: string
+                  description: User's CPF
+                password:
+                  type: string
+                  description: User's password
+      responses:
+        '200':
+          description: Authentication successful, returns user info and JWT token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT token for authenticated session
+                  user:
+                    $ref: '#/components/schemas/UserWithoutPassword'
+        '401':
+          description: Authentication failed, invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Authentication failed'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Internal server error'
+                  error:
+                    type: string
+                    example: 'An unexpected error occurred'
+                  details:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        value:
+                          type: string
+
+components:
+  schemas:
+    UserWithoutPassword:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the user
+        firstName:
+          type: string
+          description: First name of the user
+        lastName:
+          type: string
+          description: Last name of the user
+        cpf:
+          type: string
+          description: CPF number of the user
+        email:
+          type: string
+          description: Email address of the user
+        role:
+          type: string
+          description: Role of the user (admin, user, etc.)
