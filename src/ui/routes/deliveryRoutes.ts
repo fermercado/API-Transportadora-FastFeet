@@ -8,14 +8,15 @@ import { DeliveryLocationValidator } from '../../domain/validators/DeliveryLocat
 const router = Router();
 const orderController = container.resolve(OrderController);
 
-router.use(AuthMiddleware.verifyToken);
-
-router
-  .route('/api/v1/deliveries')
-  .get(orderController.listDeliveriesForDeliveryman.bind(orderController));
+router.get(
+  '/api/v1/deliveries',
+  AuthMiddleware.verifyToken,
+  orderController.listOwnDeliveries.bind(orderController),
+);
 
 router.post(
   '/api/v1/deliveries/nearby',
+  AuthMiddleware.verifyToken,
   validateRequest(DeliveryLocationValidator.createSchema),
   orderController.findNearbyDeliveries.bind(orderController),
 );
