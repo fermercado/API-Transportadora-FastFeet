@@ -4,7 +4,6 @@ import { CreateRecipientDto } from '../dtos/recipient/CreateRecipientDto';
 import { UpdateRecipientDto } from '../dtos/recipient/UpdateRecipientDto';
 import { UniqueValidationUtils } from '../../infrastructure/shared/utils/uniqueValidationUtils';
 import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
-import { ErrorDetail } from '../../@types/error-types';
 
 @injectable()
 export class RecipientValidationService {
@@ -16,11 +15,14 @@ export class RecipientValidationService {
   public async validateCreateData(data: CreateRecipientDto): Promise<void> {
     const result = await RecipientValidator.createSchema.safeParseAsync(data);
     if (!result.success) {
-      const errors: ErrorDetail[] = result.error.issues.map((issue) => ({
-        key: issue.path.join('.'),
-        value: issue.message,
-      }));
-      throw new ApplicationError('Validation error', 400, true, errors);
+      const errorMessage = result.error.issues
+        .map((issue) => `${issue.path.join('.')} - ${issue.message}`)
+        .join(', ');
+      throw new ApplicationError(
+        `Validation error: ${errorMessage}`,
+        400,
+        true,
+      );
     }
 
     await this.validateUniqueness(data);
@@ -31,14 +33,18 @@ export class RecipientValidationService {
     recipientId: string,
   ): Promise<void> {
     const result = await RecipientValidator.updateSchema
-      .partial()
+      .strict()
       .safeParseAsync(data);
+
     if (!result.success) {
-      const errors: ErrorDetail[] = result.error.issues.map((issue) => ({
-        key: issue.path.join('.'),
-        value: issue.message,
-      }));
-      throw new ApplicationError('Validation error', 400, true, errors);
+      const errorMessage = result.error.issues
+        .map((issue) => `${issue.path.join('.')} - ${issue.message}`)
+        .join(', ');
+      throw new ApplicationError(
+        `Validation error: ${errorMessage}`,
+        400,
+        true,
+      );
     }
 
     await this.validateUniqueness(data, recipientId);
@@ -60,6 +66,34 @@ export class RecipientValidationService {
         recipientData.cpf,
         'recipient',
         id,
+      );
+    }
+  }
+
+  public async validateZipCode(zipCode: string): Promise<void> {
+    if (!zipCode) {
+      throw new ApplicationError('Zip code is required', 400, true);
+    }
+  }
+
+  public async validateAddressCompleteness(
+    addressInfo: any,
+    recipientData: CreateRecipientDto | UpdateRecipientDto,
+  ): Promise<void> {
+    const missingFields = [];
+    if (!addressInfo.logradouro && !recipientData.street)
+      missingFields.push('street');
+    if (!addressInfo.bairro && !recipientData.neighborhood)
+      missingFields.push('neighborhood');
+    if (!addressInfo.localidade && !recipientData.city)
+      missingFields.push('city');
+    if (!addressInfo.uf && !recipientData.state) missingFields.push('state');
+
+    if (missingFields.length > 0) {
+      throw new ApplicationError(
+        `Some address information was not found. Please complete the following data: ${missingFields.join(', ')}.`,
+        400,
+        true,
       );
     }
   }
