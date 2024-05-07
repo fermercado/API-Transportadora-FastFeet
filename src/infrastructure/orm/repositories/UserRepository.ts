@@ -2,6 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { DataSource, Repository } from 'typeorm';
 import { User } from '../../../domain/entities/User';
 import { IUserRepository } from '../../../domain/repositories/IUserRepository';
+import { UserFilter } from '../../../domain/interface/UserFilter';
 
 @injectable()
 export class UserRepository implements IUserRepository {
@@ -37,6 +38,12 @@ export class UserRepository implements IUserRepository {
 
   public async findAll(): Promise<User[]> {
     return this.ormRepository.find();
+  }
+
+  public async findByFilter(filter: UserFilter): Promise<User[]> {
+    return this.ormRepository.find({
+      where: filter,
+    });
   }
 
   public async findByCpf(cpf: string): Promise<User | undefined> {
