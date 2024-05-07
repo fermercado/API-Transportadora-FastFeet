@@ -2,6 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { DataSource, Repository } from 'typeorm';
 import { Order } from '../../../domain/entities/Order';
 import { IOrderRepository } from '../../../domain/repositories/IOrderRepository';
+import { OrderFilter } from '../../../domain/interface/OrderFilter';
 
 @injectable()
 export class OrderRepository implements IOrderRepository {
@@ -26,7 +27,9 @@ export class OrderRepository implements IOrderRepository {
   }
 
   public async find(): Promise<Order[]> {
-    return this.ormRepository.find();
+    return this.ormRepository.find({
+      relations: ['recipient', 'deliveryman'],
+    });
   }
 
   public async findById(id: string): Promise<Order | undefined> {
@@ -37,11 +40,23 @@ export class OrderRepository implements IOrderRepository {
     return order ?? undefined;
   }
 
-  public async findByDeliveryman(deliverymanId: string): Promise<Order[]> {
-    return this.ormRepository.find({
-      where: { deliveryman: { id: deliverymanId } },
-      relations: ['recipient', 'deliveryman'],
-    });
+  public async findByFilter(filter: OrderFilter): Promise<Order[]> {
+    const query = this.ormRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.recipient', 'recipient')
+      .leftJoinAndSelect('order.deliveryman', 'deliveryman');
+
+    if (filter.deliverymanId) {
+      query.andWhere('deliveryman.id = :deliverymanId', {
+        deliverymanId: filter.deliverymanId,
+      });
+    }
+
+    if (filter.status) {
+      query.andWhere('order.status = :status', { status: filter.status });
+    }
+
+    return await query.getMany();
   }
 
   public async save(order: Order): Promise<Order> {
