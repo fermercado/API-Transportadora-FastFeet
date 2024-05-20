@@ -6,11 +6,16 @@ import { UserRole } from '../../domain/enums/UserRole';
 import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 import { ErrorDetail } from '../../@types/error-types';
 
-const JWT_SECRET: Secret = process.env.JWT_SECRET || '';
-
 @injectable()
 export class AuthService {
-  constructor(@inject(UserService) private userService: UserService) {}
+  private jwtSecret: Secret;
+
+  constructor(
+    @inject('UserService') private userService: UserService,
+    @inject('JWT_SECRET') jwtSecret: Secret = process.env.JWT_SECRET || '',
+  ) {
+    this.jwtSecret = jwtSecret;
+  }
 
   async authenticate(cpf: string, password: string): Promise<AuthResult> {
     const user = await this.userService.validateUser(cpf, password);
@@ -37,7 +42,7 @@ export class AuthService {
   }
 
   private createToken(user: { id: string; role: UserRole }): string {
-    return jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, {
+    return jwt.sign({ userId: user.id, role: user.role }, this.jwtSecret, {
       expiresIn: '24h',
     });
   }
