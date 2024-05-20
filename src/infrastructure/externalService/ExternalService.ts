@@ -46,7 +46,9 @@ export class ExternalServices {
         return { latitude: lat, longitude: lng };
       } else {
         console.warn('No results found for address:', address);
-        return {};
+        throw new Error(
+          'Failed to retrieve coordinates for the given address.',
+        );
       }
     } catch (error) {
       console.error('Error obtaining coordinates from address', error);
