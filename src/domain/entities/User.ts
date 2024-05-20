@@ -44,5 +44,3 @@ export class User {
   @UpdateDateColumn()
   updatedAt!: Date;
 }
-
-export type UserWithoutPassword = Omit<User, 'password'>;
