@@ -36,7 +36,6 @@ paths:
                 items:
                   $ref: '#/components/schemas/OrderResponseDto'
 
-
   /api/v1/deliveries/nearby:
     post:
       summary: Find nearby deliveries based on zip code
@@ -65,7 +64,6 @@ paths:
                     distance:
                       type: string
                       description: Distance from the deliveryman's current location in kilometers
-
 
 components:
   securitySchemes:

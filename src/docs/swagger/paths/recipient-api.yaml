@@ -40,7 +40,7 @@ paths:
       security:
         - bearerAuth: []
       tags:
-        - Recipient 
+        - Recipient
       responses:
         '200':
           description: Successfully retrieved list of all recipients

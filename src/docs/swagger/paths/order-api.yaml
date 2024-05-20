@@ -192,7 +192,7 @@ paths:
         '401':
           description: Unauthorized
         '403':
-          description: Forbidden          
+          description: Forbidden
 
   /api/v1/orders/{id}/pickup:
     put:
@@ -383,20 +383,20 @@ components:
         longitude:
           type: number
     ResponseUserDto:
-        type: object
-        properties:
-          id:
-            type: string
-          firstName:
-            type: string
-          lastName:
-            type: string
-          cpf:
-            type: string
-          email:
-            type: string
-          role:
-            type: string
-            enum:
-              - admin
-              - deliveryman
+      type: object
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        cpf:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum:
+            - admin
+            - deliveryman
