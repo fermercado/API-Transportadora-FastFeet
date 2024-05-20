@@ -18,6 +18,10 @@
       "semi": ["error", "always"],
       "quotes": ["error", "single"],
       "prettier/prettier": ["error", { "endOfLine": "auto" }],
+      "@typescript-eslint/no-unused-vars": ["error", {
+        "args": "all",
+        "argsIgnorePattern": "^_"
+      }],
       "@typescript-eslint/no-namespace": "off",
       "@typescript-eslint/no-explicit-any": "off"
     }

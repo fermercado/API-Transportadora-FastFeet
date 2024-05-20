@@ -1,24 +1,29 @@
+import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import jwt, { Secret } from 'jsonwebtoken';
+import { JwtPayload } from '../../application/interfaces/IAuthService';
 
-const JWT_SECRET: Secret = process.env.JWT_SECRET || 'your_secret_key';
+const JWT_SECRET = process.env.JWT_SECRET || 'jwt_secret';
 
-const AuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1];
+export class AuthMiddleware {
+  static verifyToken(req: Request, res: Response, next: NextFunction) {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) {
-    return res.status(401).json({ message: 'Acesso negado' });
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ message: 'Token inválido ou expirado' });
+    if (!token) {
+      return res.status(401).json({ message: 'Token not provided' });
     }
 
-    req.user = user;
-    next();
-  });
-};
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+      if (err) {
+        return res.status(403).json({ message: 'Invalid or expired token' });
+      } else {
+        AuthMiddleware.setReqUser(req, decoded as JwtPayload);
+        next();
+      }
+    });
+  }
 
-export default AuthMiddleware;
+  private static setReqUser(req: Request, decoded: JwtPayload) {
+    req.user = { id: decoded.userId, role: decoded.role };
+  }
+}

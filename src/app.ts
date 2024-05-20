@@ -1,12 +1,29 @@
-import express from 'express';
+import express, { Express } from 'express';
+import userRoutes from './ui/routes/userRoutes';
+import recipientRoutes from './ui/routes/recipientRoutes';
+import orderRoutes from './ui/routes/orderRoutes';
+import deliveryRoutes from './ui/routes/deliveryRoutes';
+import authRoutes from './ui/routes/authRoutes';
+import { errorHandler } from './ui/middleware/ErrorHandler';
+import setupSwagger from './swagger';
 
-const app = express();
-const port = 3000;
+export function createApp(): Express {
+  const app = express();
+  app.use(express.json());
 
-app.get('/', (req, res) => {
-  res.send('Hello FastFeet');
-});
+  app.get('/', (_req, res) => {
+    res.redirect('/api-docs/#/');
+  });
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+  setupSwagger(app);
+
+  app.use(authRoutes);
+  app.use(userRoutes);
+  app.use(recipientRoutes);
+  app.use(orderRoutes);
+  app.use(deliveryRoutes);
+
+  app.use(errorHandler);
+
+  return app;
+}

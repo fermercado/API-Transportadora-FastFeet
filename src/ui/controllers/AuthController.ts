@@ -1,25 +1,31 @@
 import { Request, Response } from 'express';
 import { AuthService } from '../../application/services/AuthService';
 import { injectable, inject } from 'tsyringe';
+import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 
 @injectable()
 export class AuthController {
   constructor(@inject('AuthService') private authService: AuthService) {}
 
-  async login(req: Request, res: Response) {
+  async login(req: Request, res: Response): Promise<Response> {
     try {
       const { cpf, password } = req.body;
-      const token = await this.authService.authenticate(cpf, password);
-
-      if (!token) {
-        return res.status(401).json({ message: 'CPF ou senha inválidos' });
+      const authResult = await this.authService.authenticate(cpf, password);
+      return res.json({ token: authResult.token, user: authResult.user });
+    } catch (error) {
+      if (error instanceof ApplicationError) {
+        return res.status(error.statusCode).json({
+          message: error.message,
+          details: error.details || [],
+        });
       }
-
-      return res.json({ token });
-    } catch (error: any) {
-      return res
-        .status(500)
-        .json({ message: 'Erro no servidor', error: error.message });
+      return res.status(500).json({
+        message: 'Internal server error',
+        error: 'An unexpected error occurred',
+        details: [
+          { key: 'unexpectedError', value: 'No specific details available' },
+        ],
+      });
     }
   }
 }

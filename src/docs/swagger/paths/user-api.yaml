@@ -1,0 +1,206 @@
+openapi: 3.0.0
+info:
+  title: User API
+  description: API for managing users
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+paths:
+  /api/v1/users:
+    post:
+      summary: Create a new user
+      security:
+        - bearerAuth: []
+      tags:
+        - User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserDto'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseUserDto'
+        '400':
+          description: Validation error
+        '403':
+          description: Access restricted to administrators
+    get:
+      summary: List all users
+      security:
+        - bearerAuth: []
+      tags:
+        - User
+      parameters:
+        - in: query
+          name: role
+          schema:
+            type: string
+            enum:
+              - admin
+              - deliveryman
+          description: Optional role to filter the list of users
+      responses:
+        '200':
+          description: Successfully retrieved list of all users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResponseUserDto'
+        '403':
+          description: Access restricted to administrators
+
+  /api/v1/users/{id}:
+    put:
+      summary: Update a user
+      security:
+        - bearerAuth: []
+      tags:
+        - User
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserDto'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseUserDto'
+        '400':
+          description: Validation error
+        '403':
+          description: Access restricted to administrators
+    get:
+      summary: Get a user by ID
+      security:
+        - bearerAuth: []
+      tags:
+        - User
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully retrieved user details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseUserDto'
+        '404':
+          description: User not found
+        '403':
+          description: Access restricted to administrators
+    delete:
+      summary: Delete a user
+      security:
+        - bearerAuth: []
+      tags:
+        - User
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: User deleted successfully
+        '404':
+          description: User not found
+        '403':
+          description: Access restricted to administrators
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateUserDto:
+      type: object
+      required:
+        - lastName
+        - firstName
+        - cpf
+        - email
+        - password
+        - confirmPassword
+        - role
+      properties:
+        lastName:
+          type: string
+        firstName:
+          type: string
+        cpf:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        confirmPassword:
+          type: string
+        role:
+          type: string
+          enum:
+            - admin
+            - deliveryman
+
+    UpdateUserDto:
+      type: object
+      properties:
+        lastName:
+          type: string
+        firstName:
+          type: string
+        cpf:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum:
+            - admin
+            - deliveryman
+
+    ResponseUserDto:
+      type: object
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        cpf:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum:
+            - admin
+            - deliveryman

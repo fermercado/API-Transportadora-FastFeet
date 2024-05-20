@@ -1,55 +1,96 @@
 import { injectable, inject } from 'tsyringe';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { UserService } from '../../application/services/UserService';
+import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 
 @injectable()
 export class UserController {
   constructor(@inject('UserService') private userService: UserService) {}
 
-  async createUser(req: Request, res: Response): Promise<Response> {
+  async createUser(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const user = await this.userService.createUser(req.body);
-      return res.status(201).json(user);
-    } catch (error: any) {
-      return res.status(400).json({ error: error.message });
+      res.status(201).json(user);
+    } catch (error) {
+      next(
+        new ApplicationError('Failed to create user', 500, true, [
+          { key: 'internal', value: 'Error during user creation' },
+        ]),
+      );
     }
   }
 
-  async updateUser(req: Request, res: Response): Promise<Response> {
+  async updateUser(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const user = await this.userService.updateUser(req.params.id, req.body);
-      return res.status(200).json(user);
-    } catch (error: any) {
-      return res.status(400).json({ error: error.message });
+      res.status(200).json(user);
+    } catch (error) {
+      next(
+        new ApplicationError('Failed to update user', 500, true, [
+          { key: 'internal', value: 'Error during user update' },
+        ]),
+      );
     }
   }
 
-  async deleteUser(req: Request, res: Response): Promise<Response> {
+  async deleteUser(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      await this.userService.deleteUser(req.params.id);
-      return res.status(204).send();
-    } catch (error: any) {
-      return res.status(400).json({ error: error.message });
+      const userIdToDelete = req.params.id;
+      const loggedInUserId = req.user.id;
+      await this.userService.deleteUser(userIdToDelete, loggedInUserId);
+      res.status(204).send();
+    } catch (error) {
+      next(
+        new ApplicationError('Failed to delete user', 500, true, [
+          { key: 'internal', value: 'Error during user deletion' },
+        ]),
+      );
     }
   }
 
-  async getUserById(req: Request, res: Response): Promise<Response> {
+  async getUserById(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const user = await this.userService.findUserById(req.params.id);
-      return user
-        ? res.status(200).json(user)
-        : res.status(404).json({ message: 'User not found' });
-    } catch (error: any) {
-      return res.status(400).json({ error: error.message });
+      if (!user) {
+        throw new ApplicationError('User not found', 404);
+      }
+      res.status(200).json(user);
+    } catch (error) {
+      next(error);
     }
   }
 
-  async getAllUsers(req: Request, res: Response): Promise<Response> {
+  async getAllUsers(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      const users = await this.userService.listUsers();
-      return res.status(200).json(users);
-    } catch (error: any) {
-      return res.status(400).json({ error: error.message });
+      const role = req.query.role as string | undefined;
+      const users = await this.userService.listUsers(role);
+      res.status(200).json(users);
+    } catch (error) {
+      next(
+        new ApplicationError('Failed to list users', 500, true, [
+          { key: 'internal', value: 'Error during user listing' },
+        ]),
+      );
     }
   }
 }

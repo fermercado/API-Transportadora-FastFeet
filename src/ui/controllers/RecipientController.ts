@@ -1,62 +1,116 @@
 import { injectable, inject } from 'tsyringe';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { RecipientService } from '../../application/services/RecipientService';
+import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 
 @injectable()
 export class RecipientController {
   constructor(
-    @inject(RecipientService) private recipientService: RecipientService,
+    @inject('RecipientService') private recipientService: RecipientService,
   ) {}
 
-  async createRecipient(req: Request, res: Response): Promise<Response> {
+  async createRecipient(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const recipient = await this.recipientService.createRecipient(req.body);
-      return res.status(201).json(recipient);
-    } catch (error: any) {
-      return res.status(400).json({ error: error.message });
+      res.status(201).json(recipient);
+    } catch (error) {
+      if (error instanceof ApplicationError) {
+        return next(error);
+      }
+
+      next(
+        new ApplicationError('Failed to create recipient', 500, true, [
+          { key: 'internal', value: 'Error during recipient creation' },
+        ]),
+      );
     }
   }
 
-  async updateRecipient(req: Request, res: Response): Promise<Response> {
+  async updateRecipient(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const recipient = await this.recipientService.updateRecipient(
         req.params.id,
         req.body,
       );
-      return res.status(200).json(recipient);
-    } catch (error: any) {
-      return res.status(400).json({ error: error.message });
+      res.status(200).json(recipient);
+    } catch (error) {
+      if (error instanceof ApplicationError) {
+        return next(error);
+      }
+
+      next(
+        new ApplicationError('Failed to update recipient', 500, true, [
+          { key: 'internal', value: 'Error during recipient update' },
+        ]),
+      );
     }
   }
 
-  async deleteRecipient(req: Request, res: Response): Promise<Response> {
+  async deleteRecipient(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       await this.recipientService.deleteRecipient(req.params.id);
-      return res.status(204).send();
-    } catch (error: any) {
-      return res.status(400).json({ error: error.message });
+      res.status(204).send();
+    } catch (error) {
+      if (error instanceof ApplicationError) {
+        return next(error);
+      }
+
+      next(
+        new ApplicationError('Failed to delete recipient', 500, true, [
+          { key: 'internal', value: 'Error during recipient deletion' },
+        ]),
+      );
     }
   }
 
-  async getRecipientById(req: Request, res: Response): Promise<Response> {
+  async getRecipientById(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const recipient = await this.recipientService.findRecipientById(
         req.params.id,
       );
-      return recipient
-        ? res.status(200).json(recipient)
-        : res.status(404).json({ message: 'Recipient not found' });
-    } catch (error: any) {
-      return res.status(400).json({ error: error.message });
+      if (!recipient) {
+        throw new ApplicationError('Recipient not found', 404, true);
+      }
+      res.status(200).json(recipient);
+    } catch (error) {
+      next(error);
     }
   }
 
-  async getAllRecipients(req: Request, res: Response): Promise<Response> {
+  async getAllRecipients(
+    _req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const recipients = await this.recipientService.listRecipients();
-      return res.status(200).json(recipients);
-    } catch (error: any) {
-      return res.status(400).json({ error: error.message });
+      res.status(200).json(recipients);
+    } catch (error) {
+      if (error instanceof ApplicationError) {
+        return next(error);
+      }
+
+      next(
+        new ApplicationError('Failed to list recipients', 500, true, [
+          { key: 'internal', value: 'Error during listing recipients' },
+        ]),
+      );
     }
   }
 }
