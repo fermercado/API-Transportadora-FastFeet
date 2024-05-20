@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { AuthService } from '../../application/services/AuthService';
 import { injectable, inject } from 'tsyringe';
 import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
-import { ErrorDetail } from '../../@types/error-types';
 
 @injectable()
 export class AuthController {
@@ -15,13 +14,9 @@ export class AuthController {
       return res.json({ token: authResult.token, user: authResult.user });
     } catch (error) {
       if (error instanceof ApplicationError) {
-        const details: ErrorDetail[] = error.details || [];
         return res.status(error.statusCode).json({
           message: error.message,
-          details: details.map((detail) => ({
-            key: detail.key,
-            value: detail.value,
-          })),
+          details: error.details || [],
         });
       }
       return res.status(500).json({
