@@ -100,8 +100,8 @@ export class RecipientService {
       neighborhood: addressInfo.bairro || recipientData.neighborhood,
       city: addressInfo.localidade || recipientData.city,
       state: addressInfo.uf || recipientData.state,
-      latitude: addressInfo.latitude || recipientData.latitude,
-      longitude: addressInfo.longitude || recipientData.longitude,
+      latitude: addressInfo.latitude ?? recipientData.latitude,
+      longitude: addressInfo.longitude ?? recipientData.longitude,
     };
   }
 }
