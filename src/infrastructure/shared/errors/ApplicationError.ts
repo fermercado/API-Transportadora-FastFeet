@@ -4,6 +4,7 @@ export class ApplicationError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
   public readonly details?: ErrorDetail[];
+  errors: any;
 
   constructor(
     message: string,
