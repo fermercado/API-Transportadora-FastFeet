@@ -9,6 +9,7 @@ import { UserMapper } from '../../application/mappers/UserMappers';
 import bcrypt from 'bcrypt';
 import { UserFilter } from '../../domain/interface/UserFilter';
 import { UserRole } from '../../domain/enums/UserRole';
+import { PasswordHasher } from '../../application/utils/PasswordHasher';
 
 @injectable()
 export class UserService {
@@ -17,11 +18,12 @@ export class UserService {
     @inject('UserValidationService')
     private userValidationService: UserValidationService,
     @inject('UserMapper') private userMapper: UserMapper,
+    @inject('PasswordHasher') private passwordHasher: PasswordHasher,
   ) {}
 
   public async createUser(userData: CreateUserDto): Promise<ResponseUserDto> {
     await this.userValidationService.validateCreateData(userData);
-    userData.password = await this.hashPassword(userData.password);
+    userData.password = await this.passwordHasher.hash(userData.password);
     const userToSave: Partial<User> = { ...userData };
     const savedUser = await this.userRepository.create(userToSave);
     return this.userMapper.toResponseUserDto(savedUser);
@@ -31,11 +33,16 @@ export class UserService {
     id: string,
     userData: UpdateUserDto,
   ): Promise<ResponseUserDto> {
+    await this.userValidationService.validateUserExistence(id);
+
     await this.userValidationService.validateUpdateData(id, userData);
+
     if (userData.password) {
-      userData.password = await this.hashPassword(userData.password);
+      userData.password = await this.passwordHasher.hash(userData.password);
     }
+
     const updatedUser = await this.userRepository.update(id, userData);
+
     return this.userMapper.toResponseUserDto(updatedUser);
   }
 
@@ -79,9 +86,5 @@ export class UserService {
       return null;
     }
     return this.userMapper.toResponseUserDto(user);
-  }
-
-  private async hashPassword(password: string): Promise<string> {
-    return await bcrypt.hash(password, 10);
   }
 }
