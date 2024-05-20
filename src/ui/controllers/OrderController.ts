@@ -9,6 +9,22 @@ import { OrderStatus } from '../../domain/enums/OrderStatus';
 export class OrderController {
   constructor(@inject('OrderService') private orderService: OrderService) {}
 
+  public handleError(
+    error: any,
+    defaultMessage: string,
+    next: NextFunction,
+  ): void {
+    if (error instanceof ApplicationError) {
+      next(error);
+    } else {
+      const errorMessage = error.message || 'Unknown error';
+      const applicationError = new ApplicationError(defaultMessage, 500, true, [
+        { key: 'internal', value: errorMessage },
+      ]);
+      next(applicationError);
+    }
+  }
+
   async createOrder(
     req: Request,
     res: Response,
@@ -18,15 +34,8 @@ export class OrderController {
       const orderDto = await this.orderService.createOrder(req.body);
       res.status(201).json(orderDto);
     } catch (error: any) {
-      if (error instanceof ApplicationError) {
-        next(error);
-      } else {
-        next(
-          new ApplicationError('Failed to create order', 500, true, [
-            { key: 'internal', value: error.message || 'Unknown error' },
-          ]),
-        );
-      }
+      console.error('Error caught in createOrder:', error);
+      this.handleError(error, 'Failed to create order', next);
     }
   }
 
@@ -42,18 +51,7 @@ export class OrderController {
       );
       res.status(200).json(orderDto);
     } catch (error: any) {
-      if (error instanceof ApplicationError) {
-        next(error);
-      } else {
-        next(
-          new ApplicationError('Failed to update order', 500, true, [
-            {
-              key: 'internal',
-              value: error.message || 'Error during order update',
-            },
-          ]),
-        );
-      }
+      this.handleError(error, 'Failed to update order', next);
     }
   }
 
@@ -66,18 +64,7 @@ export class OrderController {
       await this.orderService.deleteOrder(req.params.id);
       res.status(204).send();
     } catch (error: any) {
-      if (error instanceof ApplicationError) {
-        next(error);
-      } else {
-        next(
-          new ApplicationError('Failed to delete order', 500, true, [
-            {
-              key: 'internal',
-              value: error.message || 'Error during order deletion',
-            },
-          ]),
-        );
-      }
+      this.handleError(error, 'Failed to delete order', next);
     }
   }
 
@@ -91,20 +78,9 @@ export class OrderController {
       if (!orderDto) {
         throw new ApplicationError('Order not found', 404, true);
       }
-      res.json(orderDto);
+      res.status(200).json(orderDto);
     } catch (error: any) {
-      if (error instanceof ApplicationError) {
-        next(error);
-      } else {
-        next(
-          new ApplicationError('Failed to retrieve order', 500, true, [
-            {
-              key: 'internal',
-              value: error.message || 'Error during retrieval of order',
-            },
-          ]),
-        );
-      }
+      this.handleError(error, 'Failed to retrieve order', next);
     }
   }
 
@@ -116,20 +92,9 @@ export class OrderController {
     try {
       const status = OrderStatusValidator.validate(req.query.status);
       const ordersDto = await this.orderService.listOrders(status);
-      res.json(ordersDto);
+      res.status(200).json(ordersDto);
     } catch (error: any) {
-      if (error instanceof ApplicationError) {
-        next(error);
-      } else {
-        next(
-          new ApplicationError('Failed to list orders', 500, true, [
-            {
-              key: 'internal',
-              value: error.message || 'Error during listing orders',
-            },
-          ]),
-        );
-      }
+      this.handleError(error, 'Failed to list orders', next);
     }
   }
 
@@ -144,20 +109,9 @@ export class OrderController {
         req.user.id,
         req.user.role,
       );
-      res.json(orderDto);
+      res.status(200).json(orderDto);
     } catch (error: any) {
-      if (error instanceof ApplicationError) {
-        next(error);
-      } else {
-        next(
-          new ApplicationError('Failed to mark order as waiting', 500, true, [
-            {
-              key: 'internal',
-              value: error.message || 'Error during order status change',
-            },
-          ]),
-        );
-      }
+      this.handleError(error, 'Failed to mark order as waiting', next);
     }
   }
 
@@ -172,20 +126,9 @@ export class OrderController {
         req.user.id,
         req.user.role,
       );
-      res.json(orderDto);
+      res.status(200).json(orderDto);
     } catch (error: any) {
-      if (error instanceof ApplicationError) {
-        next(error);
-      } else {
-        next(
-          new ApplicationError('Failed to pickup order', 500, true, [
-            {
-              key: 'internal',
-              value: error.message || 'Error during picking up the order',
-            },
-          ]),
-        );
-      }
+      this.handleError(error, 'Failed to pickup order', next);
     }
   }
 
@@ -207,20 +150,9 @@ export class OrderController {
         req.user.id,
         req.file,
       );
-      res.json(orderDto);
+      res.status(200).json(orderDto);
     } catch (error: any) {
-      if (error instanceof ApplicationError) {
-        next(error);
-      } else {
-        next(
-          new ApplicationError('Failed to mark order as delivered', 500, true, [
-            {
-              key: 'internal',
-              value: error.message || 'Error during order delivery',
-            },
-          ]),
-        );
-      }
+      this.handleError(error, 'Failed to mark order as delivered', next);
     }
   }
 
@@ -235,20 +167,9 @@ export class OrderController {
         req.user.id,
         req.user.role,
       );
-      res.json(orderDto);
+      res.status(200).json(orderDto);
     } catch (error: any) {
-      if (error instanceof ApplicationError) {
-        next(error);
-      } else {
-        next(
-          new ApplicationError('Failed to return order', 500, true, [
-            {
-              key: 'internal',
-              value: error.message || 'Error during returning the order',
-            },
-          ]),
-        );
-      }
+      this.handleError(error, 'Failed to return order', next);
     }
   }
 
@@ -264,20 +185,9 @@ export class OrderController {
         deliverymanId,
         status,
       );
-      res.json(ordersDto);
+      res.status(200).json(ordersDto);
     } catch (error: any) {
-      if (error instanceof ApplicationError) {
-        next(error);
-      } else {
-        next(
-          new ApplicationError('Failed to list deliveries', 500, true, [
-            {
-              key: 'internal',
-              value: error.message || 'Error during listing deliveries',
-            },
-          ]),
-        );
-      }
+      this.handleError(error, 'Failed to list deliveries', next);
     }
   }
 
@@ -293,20 +203,9 @@ export class OrderController {
         deliverymanId,
         status,
       );
-      res.json(ordersDto);
+      res.status(200).json(ordersDto);
     } catch (error: any) {
-      if (error instanceof ApplicationError) {
-        next(error);
-      } else {
-        next(
-          new ApplicationError('Failed to list own deliveries', 500, true, [
-            {
-              key: 'internal',
-              value: error.message || 'Error during listing own deliveries',
-            },
-          ]),
-        );
-      }
+      this.handleError(error, 'Failed to list own deliveries', next);
     }
   }
 
@@ -320,20 +219,9 @@ export class OrderController {
         req.user.id,
         req.body.zipCode,
       );
-      res.json(deliveries);
+      res.status(200).json(deliveries);
     } catch (error: any) {
-      if (error instanceof ApplicationError) {
-        next(error);
-      } else {
-        next(
-          new ApplicationError('Failed to find nearby deliveries', 500, true, [
-            {
-              key: 'internal',
-              value: error.message || 'Error during finding deliveries',
-            },
-          ]),
-        );
-      }
+      this.handleError(error, 'Failed to find nearby deliveries', next);
     }
   }
 }
