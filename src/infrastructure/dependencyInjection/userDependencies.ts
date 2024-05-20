@@ -4,6 +4,7 @@ import { UserRepository } from '../orm/repositories/UserRepository';
 import { UserService } from '../../application/services/UserService';
 import { UserValidationService } from '../../application/validation/UserValidationService';
 import { UserMapper } from '../../application/mappers/UserMappers';
+
 container.registerSingleton<IUserRepository>('IUserRepository', UserRepository);
 container.registerSingleton<UserService>('UserService', UserService);
 container.registerSingleton<UserValidationService>(
