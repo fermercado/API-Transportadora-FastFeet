@@ -1,11 +1,6 @@
 import { OrderStatus } from '../../../domain/enums/OrderStatus';
 import { ParsedQs } from 'qs';
 export class OrderStatusValidator {
-  /**
-   *
-   * @param status
-   * @returns
-   */
   public static validate(
     status: string | ParsedQs | string[] | ParsedQs[] | undefined,
   ): OrderStatus | undefined {
