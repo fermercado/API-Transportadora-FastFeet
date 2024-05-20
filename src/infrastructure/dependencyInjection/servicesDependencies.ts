@@ -6,9 +6,9 @@ import { AuthService } from '../../application/services/AuthService';
 import { UserService } from '../../application/services/UserService';
 import { DeliveryNotificationService } from '../../application/services/DeliveryNotificationService';
 import { ExternalServices } from '../../infrastructure/externalService/ExternalService';
-import { UniqueValidationUtils } from '../../application/utils/uniqueValidationUtils';
-import { PasswordHasher } from '../../application/utils/PasswordHasher';
-import { UserValidationService } from '../../application/validation/UserValidationService';
+import { UniqueValidationUtils } from '../../infrastructure/shared/utils/uniqueValidationUtils';
+import { PasswordHasher } from '../../infrastructure/shared/utils/PasswordHasher';
+import { UserValidationService } from '../../domain/validation/UserValidationService';
 import { UserMapper } from '../../application/mappers/UserMappers';
 
 const jwtSecret = process.env.JWT_SECRET || 'default_secret';

@@ -2,7 +2,7 @@ import { OrderStatus } from '../../../../domain/enums/OrderStatus';
 import {
   statusToRecipientMessage,
   translateStatus,
-} from '../../../../application/utils/translateStatus';
+} from '../../../../infrastructure/shared/utils/translateStatus';
 
 describe('statusUtils', () => {
   describe('statusToRecipientMessage', () => {

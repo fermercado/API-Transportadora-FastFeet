@@ -1,7 +1,7 @@
 import { Order } from '../../domain/entities/Order';
 import { OrderResponseDto } from '../dtos/order/ResponseOrderDto';
 import { injectable } from 'tsyringe';
-import { DateUtils } from '../utils/dateUtils';
+import { DateUtils } from '../../infrastructure/shared/utils/dateUtils';
 
 @injectable()
 export class OrderMapper {

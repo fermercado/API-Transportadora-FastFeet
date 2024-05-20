@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { Repository } from 'typeorm';
-import { OrderValidationService } from '../../../../application/validation/OrderValidationService';
+import { OrderValidationService } from '../../../../domain/validation/OrderValidationService';
 import { Recipient } from '../../../../domain/entities/Recipient';
 import { Order } from '../../../../domain/entities/Order';
 import { ApplicationError } from '../../../../infrastructure/shared/errors/ApplicationError';

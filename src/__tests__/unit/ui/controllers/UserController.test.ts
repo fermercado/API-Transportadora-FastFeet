@@ -4,13 +4,13 @@ import { UserService } from '../../../../application/services/UserService';
 import { UserController } from '../../../../ui/controllers/UserController';
 import { ApplicationError } from '../../../../infrastructure/shared/errors/ApplicationError';
 import { UserMapper } from '../../../../application/mappers/UserMappers';
-import { UserValidationService } from '../../../../application/validation/UserValidationService';
+import { UserValidationService } from '../../../../domain/validation/UserValidationService';
 import { UserRepository } from '../../../../infrastructure/orm/repositories/UserRepository';
 import { UserRole } from '../../../../domain/enums/UserRole';
 
 jest.mock('../../../../application/services/UserService');
 jest.mock('../../../../application/mappers/UserMappers');
-jest.mock('../../../../application/validation/UserValidationService');
+jest.mock('../../../../domain/validation/UserValidationService');
 jest.mock('../../../../infrastructure/orm/repositories/UserRepository');
 
 describe('UserController', () => {

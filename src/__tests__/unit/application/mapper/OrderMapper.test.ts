@@ -3,11 +3,11 @@ import { Recipient } from '../../../../domain/entities/Recipient';
 import { User } from '../../../../domain/entities/User';
 import { OrderResponseDto } from '../../../../application/dtos/order/ResponseOrderDto';
 import { OrderMapper } from '../../../../application/mappers/OrderMapper';
-import { DateUtils } from '../../../../application/utils/dateUtils';
+import { DateUtils } from '../../../../infrastructure/shared/utils/dateUtils';
 import { OrderStatus } from '../../../../domain/enums/OrderStatus';
 import { UserRole } from '../../../../domain/enums/UserRole';
 
-jest.mock('../../../../application/utils/dateUtils', () => ({
+jest.mock('../../../../infrastructure/shared/utils/dateUtils', () => ({
   DateUtils: {
     formatToBrazilianDateTime: jest.fn((date) =>
       date ? 'formatted date' : '',

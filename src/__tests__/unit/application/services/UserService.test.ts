@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 import { UserService } from '../../../../application/services/UserService';
 import { IUserRepository } from '../../../../domain/repositories/IUserRepository';
-import { UserValidationService } from '../../../../application/validation/UserValidationService';
+import { UserValidationService } from '../../../../domain/validation/UserValidationService';
 import { UserMapper } from '../../../../application/mappers/UserMappers';
-import { PasswordHasher } from '../../../../application/utils/PasswordHasher';
+import { PasswordHasher } from '../../../../infrastructure/shared/utils/PasswordHasher';
 import { CreateUserDto } from '../../../../application/dtos/user/CreateUserDto';
 import { ResponseUserDto } from '../../../../application/dtos/user/ResponseUserDto';
 import { User } from '../../../../domain/entities/User';

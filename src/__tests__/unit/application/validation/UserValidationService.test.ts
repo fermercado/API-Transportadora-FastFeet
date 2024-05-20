@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import { container } from 'tsyringe';
-import { UserValidationService } from '../../../../application/validation/UserValidationService';
+import { UserValidationService } from '../../../../domain/validation/UserValidationService';
 import { IUserRepository } from '../../../../domain/repositories/IUserRepository';
-import { UniqueValidationUtils } from '../../../../application/utils/uniqueValidationUtils';
+import { UniqueValidationUtils } from '../../../../infrastructure/shared/utils/uniqueValidationUtils';
 import { UserValidator } from '../../../../domain/validators/UserValidator';
 import { CreateUserDto } from '../../../../application/dtos/user/CreateUserDto';
 import { UpdateUserDto } from '../../../../application/dtos/user/UpdateUserDto';
@@ -12,7 +12,7 @@ import { UserRole } from '../../../../domain/enums/UserRole';
 import { CommonValidations } from '../../../../domain/validators/commonValidations';
 
 jest.mock('../../../../domain/repositories/IUserRepository');
-jest.mock('../../../../application/utils/uniqueValidationUtils');
+jest.mock('../../../../infrastructure/shared/utils/uniqueValidationUtils');
 
 describe('UserValidationService', () => {
   let userValidationService: UserValidationService;

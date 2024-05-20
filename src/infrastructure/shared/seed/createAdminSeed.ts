@@ -14,12 +14,12 @@ class CreateAdminSeed {
       const userRepository = AppDataSource.getRepository(User);
 
       const adminData = {
-        firstName: '',
-        lastName: '',
-        cpf: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
+        firstName: 'Fernando',
+        lastName: 'Mercado',
+        cpf: '351.360.828-44',
+        email: 'admin@admin.com',
+        password: 'Senh@123',
+        confirmPassword: 'Senh@123',
         role: UserRole.Admin,
       };
 

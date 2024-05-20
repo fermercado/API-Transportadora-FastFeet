@@ -1,6 +1,6 @@
 import { inject, injectable } from 'tsyringe';
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
-import { UserValidationService } from '../validation/UserValidationService';
+import { UserValidationService } from '../../domain/validation/UserValidationService';
 import { User } from '../../domain/entities/User';
 import { CreateUserDto } from '../dtos/user/CreateUserDto';
 import { UpdateUserDto } from '../dtos/user/UpdateUserDto';
@@ -9,7 +9,7 @@ import { UserMapper } from '../../application/mappers/UserMappers';
 import bcrypt from 'bcrypt';
 import { UserFilter } from '../../domain/interface/UserFilter';
 import { UserRole } from '../../domain/enums/UserRole';
-import { PasswordHasher } from '../../application/utils/PasswordHasher';
+import { PasswordHasher } from '../../infrastructure/shared/utils/PasswordHasher';
 
 @injectable()
 export class UserService {

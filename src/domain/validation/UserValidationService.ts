@@ -1,9 +1,9 @@
 import { injectable, inject } from 'tsyringe';
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
 import { UserValidator } from '../../domain/validators/UserValidator';
-import { CreateUserDto } from '../dtos/user/CreateUserDto';
-import { UpdateUserDto } from '../dtos/user/UpdateUserDto';
-import { UniqueValidationUtils } from '../../application/utils/uniqueValidationUtils';
+import { CreateUserDto } from '../../application/dtos/user/CreateUserDto';
+import { UpdateUserDto } from '../../application/dtos/user/UpdateUserDto';
+import { UniqueValidationUtils } from '../../infrastructure/shared/utils/uniqueValidationUtils';
 import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 import { ZodIssue } from 'zod';
 import { ErrorDetail } from '../../@types/error-types';

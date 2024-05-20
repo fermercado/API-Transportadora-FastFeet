@@ -1,4 +1,4 @@
-import { OrderStatus } from '../../domain/enums/OrderStatus';
+import { OrderStatus } from '../../../domain/enums/OrderStatus';
 
 export const statusToRecipientMessage = {
   [OrderStatus.Pending]:

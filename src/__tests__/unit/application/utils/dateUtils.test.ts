@@ -1,4 +1,4 @@
-import { DateUtils } from '../../../../application/utils/dateUtils';
+import { DateUtils } from '../../../../infrastructure/shared/utils/dateUtils';
 
 describe('DateUtils', () => {
   describe('formatToBrazilianDateTime', () => {

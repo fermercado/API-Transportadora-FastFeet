@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import { EmailService } from '../../infrastructure/service/EmailService';
-import { translateStatus } from '../utils/translateStatus';
+import { translateStatus } from '../../infrastructure/shared/utils/translateStatus';
 
 @injectable()
 export class DeliveryNotificationService {

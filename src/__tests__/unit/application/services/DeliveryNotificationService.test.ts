@@ -1,10 +1,10 @@
 import 'reflect-metadata';
 import { DeliveryNotificationService } from '../../../../application/services/DeliveryNotificationService';
 import { EmailService } from '../../../../infrastructure/service/EmailService';
-import { translateStatus } from '../../../../application/utils/translateStatus';
+import { translateStatus } from '../../../../infrastructure/shared/utils/translateStatus';
 
 jest.mock('../../../../infrastructure/service/EmailService');
-jest.mock('../../../../application/utils/translateStatus');
+jest.mock('../../../../infrastructure/shared/utils/translateStatus');
 
 describe('DeliveryNotificationService', () => {
   let deliveryNotificationService: DeliveryNotificationService;

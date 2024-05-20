@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { RecipientService } from '../../../../application/services/RecipientService';
 import { IRecipientRepository } from '../../../../domain/repositories/IRecipientRepository';
-import { RecipientValidationService } from '../../../../application/validation/RecipientValidationService';
+import { RecipientValidationService } from '../../../../domain/validation/RecipientValidationService';
 import { RecipientMapper } from '../../../../application/mappers/RecipientMapper';
 import { CreateRecipientDto } from '../../../../application/dtos/recipient/CreateRecipientDto';
 import { Recipient } from '../../../../domain/entities/Recipient';
@@ -9,7 +9,7 @@ import { ApplicationError } from '../../../../infrastructure/shared/errors/Appli
 import { ExternalServices } from '../../../../infrastructure/externalService/ExternalService';
 
 jest.mock('../../../../domain/repositories/IRecipientRepository');
-jest.mock('../../../../application/validation/RecipientValidationService');
+jest.mock('../../../../domain/validation/RecipientValidationService');
 jest.mock('../../../../application/mappers/RecipientMapper');
 jest.mock('../../../../infrastructure/externalService/ExternalService', () => {
   return {
