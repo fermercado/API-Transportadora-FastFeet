@@ -15,11 +15,6 @@ const options = {
         email: 'fermercado@live.com',
       },
     },
-    servers: [
-      {
-        url: 'http://localhost:3000',
-      },
-    ],
   },
   apis: [
     './src/docs/swagger/paths/login-api.yaml',
