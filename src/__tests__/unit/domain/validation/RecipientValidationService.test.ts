@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { container } from 'tsyringe';
-import { RecipientValidationService } from '../../../../application/validation/RecipientValidationService';
-import { UniqueValidationUtils } from '../../../../application/utils/uniqueValidationUtils';
+import { RecipientValidationService } from '../../../../domain/validation/RecipientValidationService';
+import { UniqueValidationUtils } from '../../../../infrastructure/shared/utils/uniqueValidationUtils';
 import { ApplicationError } from '../../../../infrastructure/shared/errors/ApplicationError';
 import { CreateRecipientDto } from '../../../../application/dtos/recipient/CreateRecipientDto';
 import { UpdateRecipientDto } from '../../../../application/dtos/recipient/UpdateRecipientDto';
@@ -10,7 +10,7 @@ import { IRecipientRepository } from '../../../../domain/repositories/IRecipient
 import { cpf as cpfValidator } from 'cpf-cnpj-validator';
 import { ExternalServices } from '../../../../infrastructure/externalService/ExternalService';
 
-jest.mock('../../../../application/utils/uniqueValidationUtils');
+jest.mock('../../../../infrastructure/shared/utils/uniqueValidationUtils');
 jest.mock('cpf-cnpj-validator', () => ({
   cpf: {
     isValid: jest.fn(),

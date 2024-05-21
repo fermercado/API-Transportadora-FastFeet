@@ -4,12 +4,12 @@ import { RecipientService } from '../../../../application/services/RecipientServ
 import { RecipientController } from '../../../../ui/controllers/RecipientController';
 import { ApplicationError } from '../../../../infrastructure/shared/errors/ApplicationError';
 import { RecipientMapper } from '../../../../application/mappers/RecipientMapper';
-import { RecipientValidationService } from '../../../../application/validation/RecipientValidationService';
+import { RecipientValidationService } from '../../../../domain/validation/RecipientValidationService';
 import { RecipientRepository } from '../../../../infrastructure/orm/repositories/RecipientRepository';
 
 jest.mock('../../../../application/services/RecipientService');
 jest.mock('../../../../application/mappers/RecipientMapper');
-jest.mock('../../../../application/validation/RecipientValidationService');
+jest.mock('../../../../domain/validation/RecipientValidationService');
 jest.mock('../../../../infrastructure/orm/repositories/RecipientRepository');
 
 describe('RecipientController', () => {

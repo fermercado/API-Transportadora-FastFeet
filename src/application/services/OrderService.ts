@@ -3,7 +3,7 @@ import { Order } from '../../domain/entities/Order';
 import { IOrderRepository } from '../../domain/repositories/IOrderRepository';
 import { CreateOrderDto } from '../dtos/order/CreateOrderDto';
 import { UpdateOrderDto } from '../dtos/order/UpdateOrderDto';
-import { OrderValidationService } from '../validation/OrderValidationService';
+import { OrderValidationService } from '../../domain/validation/OrderValidationService';
 import { OrderStatus } from '../../domain/enums/OrderStatus';
 import ImageUploadService from '../../infrastructure/service/ImageUploadService';
 import { OrderResponseDto } from '../dtos/order/ResponseOrderDto';

@@ -12,6 +12,10 @@ export class RecipientValidator {
       number: z.number().refine((num) => num > 0, {
         message: 'Number must be a positive integer',
       }),
+      street: z.string().optional(),
+      neighborhood: z.string().optional(),
+      city: z.string().optional(),
+      state: z.string().optional(),
       complement: z.string(),
     })
     .strict();
@@ -31,6 +35,10 @@ export class RecipientValidator {
           message: 'Number must be a positive integer or omitted',
         }),
       complement: z.string().optional(),
+      street: z.string().optional(),
+      neighborhood: z.string().optional(),
+      city: z.string().optional(),
+      state: z.string().optional(),
     })
     .strict();
 }

@@ -3,7 +3,7 @@ import { IRecipientRepository } from '../../domain/repositories/IRecipientReposi
 import { ExternalServices } from '../../infrastructure/externalService/ExternalService';
 import { CreateRecipientDto } from '../dtos/recipient/CreateRecipientDto';
 import { UpdateRecipientDto } from '../dtos/recipient/UpdateRecipientDto';
-import { RecipientValidationService } from '../validation/RecipientValidationService';
+import { RecipientValidationService } from '../../domain/validation/RecipientValidationService';
 import { RecipientMapper } from '../mappers/RecipientMapper';
 import { RecipientResponseDto } from '../dtos/recipient/ResponseRecipientDto';
 import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';

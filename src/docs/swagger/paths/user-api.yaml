@@ -122,9 +122,22 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deleteKey:
+                  type: string
+                  description: The delete key required to delete the default admin user
+                  example: your-secret-delete-key
       responses:
         '204':
           description: User deleted successfully
+        '400':
+          description: Invalid delete key for default admin
         '404':
           description: User not found
         '403':
@@ -141,17 +154,17 @@ components:
     CreateUserDto:
       type: object
       required:
-        - lastName
         - firstName
+        - lastName
         - cpf
         - email
         - password
         - confirmPassword
         - role
       properties:
-        lastName:
-          type: string
         firstName:
+          type: string
+        lastName:
           type: string
         cpf:
           type: string
@@ -170,9 +183,9 @@ components:
     UpdateUserDto:
       type: object
       properties:
-        lastName:
-          type: string
         firstName:
+          type: string
+        lastName:
           type: string
         cpf:
           type: string

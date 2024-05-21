@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import { container } from 'tsyringe';
-import { UserValidationService } from '../../../../application/validation/UserValidationService';
+import { UserValidationService } from '../../../../domain/validation/UserValidationService';
 import { IUserRepository } from '../../../../domain/repositories/IUserRepository';
-import { UniqueValidationUtils } from '../../../../application/utils/uniqueValidationUtils';
+import { UniqueValidationUtils } from '../../../../infrastructure/shared/utils/uniqueValidationUtils';
 import { UserValidator } from '../../../../domain/validators/UserValidator';
 import { CreateUserDto } from '../../../../application/dtos/user/CreateUserDto';
 import { UpdateUserDto } from '../../../../application/dtos/user/UpdateUserDto';
@@ -10,9 +10,10 @@ import { ApplicationError } from '../../../../infrastructure/shared/errors/Appli
 import { ZodError, ZodIssue, z } from 'zod';
 import { UserRole } from '../../../../domain/enums/UserRole';
 import { CommonValidations } from '../../../../domain/validators/commonValidations';
+import { User } from '../../../../domain/entities/User';
 
 jest.mock('../../../../domain/repositories/IUserRepository');
-jest.mock('../../../../application/utils/uniqueValidationUtils');
+jest.mock('../../../../infrastructure/shared/utils/uniqueValidationUtils');
 
 describe('UserValidationService', () => {
   let userValidationService: UserValidationService;
@@ -56,6 +57,8 @@ describe('UserValidationService', () => {
           z.literal(UserRole.Deliveryman),
         ]),
         email: z.string().email(),
+        isDefaultAdmin: z.boolean().optional(),
+        deleteKey: z.string().optional(),
       }),
     );
   });
@@ -219,6 +222,85 @@ describe('UserValidationService', () => {
     it('should not throw an error if user tries to delete another account', async () => {
       await expect(
         userValidationService.validateDeleteSelfOperation('1', '2'),
+      ).resolves.not.toThrow();
+    });
+  });
+  describe('validateDeleteKeyForDefaultAdmin', () => {
+    it('should throw an error if user is default admin and provided delete key is incorrect', async () => {
+      const user = {
+        isDefaultAdmin: true,
+        deleteKey: 'correct-delete-key',
+      } as User;
+
+      const providedDeleteKey = 'incorrect-delete-key';
+
+      await expect(
+        userValidationService.validateDeleteKeyForDefaultAdmin(
+          user,
+          providedDeleteKey,
+        ),
+      ).rejects.toThrow(ApplicationError);
+
+      try {
+        await userValidationService.validateDeleteKeyForDefaultAdmin(
+          user,
+          providedDeleteKey,
+        );
+      } catch (error: any) {
+        expect(error).toBeInstanceOf(ApplicationError);
+        expect(error.message).toBe('Unauthorized operation');
+        expect(error.statusCode).toBe(401);
+        expect(error.details).toEqual([
+          { key: 'deleteKey', value: 'Invalid delete key for default admin.' },
+        ]);
+      }
+    });
+
+    it('should throw an error if user is default admin and delete key is not provided', async () => {
+      const user = {
+        isDefaultAdmin: true,
+        deleteKey: 'correct-delete-key',
+      } as User;
+
+      await expect(
+        userValidationService.validateDeleteKeyForDefaultAdmin(user),
+      ).rejects.toThrow(ApplicationError);
+
+      try {
+        await userValidationService.validateDeleteKeyForDefaultAdmin(user);
+      } catch (error: any) {
+        expect(error).toBeInstanceOf(ApplicationError);
+        expect(error.message).toBe('Unauthorized operation');
+        expect(error.statusCode).toBe(401);
+        expect(error.details).toEqual([
+          { key: 'deleteKey', value: 'Invalid delete key for default admin.' },
+        ]);
+      }
+    });
+
+    it('should not throw an error if user is default admin and provided delete key is correct', async () => {
+      const user = {
+        isDefaultAdmin: true,
+        deleteKey: 'correct-delete-key',
+      } as User;
+
+      const providedDeleteKey = 'correct-delete-key';
+
+      await expect(
+        userValidationService.validateDeleteKeyForDefaultAdmin(
+          user,
+          providedDeleteKey,
+        ),
+      ).resolves.not.toThrow();
+    });
+
+    it('should not throw an error if user is not default admin', async () => {
+      const user = {
+        isDefaultAdmin: false,
+      } as User;
+
+      await expect(
+        userValidationService.validateDeleteKeyForDefaultAdmin(user),
       ).resolves.not.toThrow();
     });
   });

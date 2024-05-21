@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 export class PasswordHasher {
   async hash(password: string): Promise<string> {

@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { UniqueValidationUtils } from '../../../../application/utils/uniqueValidationUtils';
+import { UniqueValidationUtils } from '../../../../infrastructure/shared/utils/uniqueValidationUtils';
 import { IUserRepository } from '../../../../domain/repositories/IUserRepository';
 import { IRecipientRepository } from '../../../../domain/repositories/IRecipientRepository';
 import { ApplicationError } from '../../../../infrastructure/shared/errors/ApplicationError';

@@ -165,32 +165,20 @@ components:
     UpdateRecipientDto:
       type: object
       properties:
-        email:
-          type: string
-        cpf:
-          type: string
-        zipCode:
-          type: string
-        street:
-          type: string
-        number:
-          type: integer
-        complement:
-          type: string
-        city:
-          type: string
-        state:
-          type: string
-        neighborhood:
-          type: string
         firstName:
           type: string
         lastName:
           type: string
-        latitude:
-          type: number
-        longitude:
-          type: number
+        cpf:
+          type: string
+        email:
+          type: string
+        zipCode:
+          type: string
+        complement:
+          type: string
+        number:
+          type: integer
     RecipientResponseDto:
       type: object
       properties:

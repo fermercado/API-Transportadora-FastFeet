@@ -10,6 +10,8 @@ export class UserValidator {
       password: CommonValidations.createPasswordValidation(),
       role: z.union([z.literal('admin'), z.literal('deliveryman')]),
       email: CommonValidations.createEmailValidation(),
+      isDefaultAdmin: z.boolean().optional(),
+      deleteKey: z.string().optional(),
     });
   }
 

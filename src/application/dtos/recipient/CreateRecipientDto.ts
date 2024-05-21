@@ -3,7 +3,7 @@ export interface CreateRecipientDto {
   cpf: string;
   zipCode: string;
   street?: string;
-  number?: number;
+  number: number;
   complement?: string;
   city?: string;
   state?: string;

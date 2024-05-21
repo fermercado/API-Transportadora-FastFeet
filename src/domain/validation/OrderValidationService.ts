@@ -5,12 +5,12 @@ import { User } from '../../domain/entities/User';
 import { Order } from '../../domain/entities/Order';
 import { IOrderRepository } from '../../domain/repositories/IOrderRepository';
 import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
-import { CreateRecipientDto } from '../dtos/recipient/CreateRecipientDto';
-import { UpdateRecipientDto } from '../dtos/recipient/UpdateRecipientDto';
+import { CreateRecipientDto } from '../../application/dtos/recipient/CreateRecipientDto';
+import { UpdateRecipientDto } from '../../application/dtos/recipient/UpdateRecipientDto';
 import { OrderStatus } from '../../domain/enums/OrderStatus';
 import { getDistance } from 'geolib';
 import { ExternalServices } from '../../infrastructure/externalService/ExternalService';
-import { UpdateOrderDto } from '../dtos/order/UpdateOrderDto';
+import { UpdateOrderDto } from '../../application/dtos/order/UpdateOrderDto';
 import OrderValidator from '../../domain/validators/OrderValidator';
 import { UserRole } from '../../domain/enums/UserRole';
 

@@ -1,10 +1,10 @@
-import { IUserRepository } from '../../domain/repositories/IUserRepository';
-import { IRecipientRepository } from '../../domain/repositories/IRecipientRepository';
+import { IUserRepository } from '../../../domain/repositories/IUserRepository';
+import { IRecipientRepository } from '../../../domain/repositories/IRecipientRepository';
 import { injectable, inject } from 'tsyringe';
-import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
-import { ErrorDetail } from '../../@types/error-types';
-import { User } from '../../domain/entities/User';
-import { Recipient } from '../../domain/entities/Recipient';
+import { ApplicationError } from '../../../infrastructure/shared/errors/ApplicationError';
+import { ErrorDetail } from '../../../@types/error-types';
+import { User } from '../../../domain/entities/User';
+import { Recipient } from '../../../domain/entities/Recipient';
 
 @injectable()
 export class UniqueValidationUtils {

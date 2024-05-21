@@ -38,6 +38,12 @@ export class User {
   @Column({ nullable: true, unique: true })
   email!: string;
 
+  @Column({ default: false })
+  isDefaultAdmin?: boolean;
+
+  @Column({ nullable: true })
+  deleteKey?: string;
+
   @CreateDateColumn()
   createdAt!: Date;
 

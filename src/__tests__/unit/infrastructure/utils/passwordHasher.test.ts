@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import { PasswordHasher } from '../../../../application/utils/PasswordHasher';
+import { PasswordHasher } from '../../../../infrastructure/shared/utils/PasswordHasher';
 
 jest.mock('bcrypt');
 

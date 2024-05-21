@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 import { UserService } from '../../../../application/services/UserService';
 import { IUserRepository } from '../../../../domain/repositories/IUserRepository';
-import { UserValidationService } from '../../../../application/validation/UserValidationService';
+import { UserValidationService } from '../../../../domain/validation/UserValidationService';
 import { UserMapper } from '../../../../application/mappers/UserMappers';
-import { PasswordHasher } from '../../../../application/utils/PasswordHasher';
+import { PasswordHasher } from '../../../../infrastructure/shared/utils/PasswordHasher';
 import { CreateUserDto } from '../../../../application/dtos/user/CreateUserDto';
 import { ResponseUserDto } from '../../../../application/dtos/user/ResponseUserDto';
 import { User } from '../../../../domain/entities/User';
@@ -36,6 +36,7 @@ describe('UserService', () => {
       validateUpdateData: jest.fn(),
       validateUserExistence: jest.fn(),
       validateDeleteSelfOperation: jest.fn(),
+      validateDeleteKeyForDefaultAdmin: jest.fn(),
     } as any;
     mockUserMapper = { toResponseUserDto: jest.fn() } as any;
     mockPasswordHasher = { hash: jest.fn() } as any;
@@ -315,6 +316,7 @@ describe('UserService', () => {
         password: 'NewPassword123!',
         confirmPassword: 'NewPassword123!',
       };
+
       const user: User = {
         id: '1',
         cpf: '123.456.789-09',
@@ -326,7 +328,9 @@ describe('UserService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
+
       const updatedUser: User = { ...user, password: 'hashedNewPassword' };
+
       const responseUserDto: ResponseUserDto = {
         id: '1',
         firstName: 'Alice',
@@ -339,8 +343,8 @@ describe('UserService', () => {
       mockPasswordHasher.hash.mockResolvedValue('hashedNewPassword');
       mockUserRepository.update.mockResolvedValue(updatedUser);
       mockUserMapper.toResponseUserDto.mockReturnValue(responseUserDto);
-      mockUserValidationService.validateUpdateData.mockResolvedValue();
-      mockUserValidationService.validateUserExistence.mockResolvedValue();
+      mockUserValidationService.validateUpdateData.mockResolvedValue(undefined);
+      mockUserValidationService.validateUserExistence.mockResolvedValue(user);
 
       const result = await userService.updateUser('1', updateUserDto);
 
@@ -357,6 +361,7 @@ describe('UserService', () => {
       );
       expect(result).toEqual(responseUserDto);
     });
+
     it('should throw an error if update data validation fails', async () => {
       const updateUserDto: UpdateUserDto = {
         email: 'invalid-email',
@@ -406,6 +411,7 @@ describe('UserService', () => {
       firstName: 'Alice',
       lastName: 'Johnson',
     };
+
     const user: User = {
       id: '1',
       cpf: '123.456.789-09',
@@ -417,17 +423,19 @@ describe('UserService', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+
     const updatedUser: User = {
       ...user,
       firstName: 'Alice',
       lastName: 'Johnson',
     };
+
     mockUserRepository.update.mockResolvedValue(updatedUser);
     mockUserMapper.toResponseUserDto.mockReturnValue(
       updatedUser as ResponseUserDto,
     );
-    mockUserValidationService.validateUpdateData.mockResolvedValue();
-    mockUserValidationService.validateUserExistence.mockResolvedValue();
+    mockUserValidationService.validateUpdateData.mockResolvedValue(undefined);
+    mockUserValidationService.validateUserExistence.mockResolvedValue(user);
 
     const result = await userService.updateUser('1', updateUserDto);
 
@@ -435,6 +443,7 @@ describe('UserService', () => {
     expect(mockUserRepository.update).toHaveBeenCalledWith('1', updateUserDto);
     expect(result).toEqual(updatedUser as ResponseUserDto);
   });
+
   it('should throw an error if the updated email or CPF is already in use', async () => {
     const updateUserDto: UpdateUserDto = {
       email: 'existing@example.com',
@@ -493,11 +502,23 @@ describe('UserService', () => {
       const userIdToDelete = '2';
       const loggedInUserId = '1';
 
-      mockUserValidationService.validateUserExistence.mockResolvedValue();
-      mockUserValidationService.validateDeleteSelfOperation.mockResolvedValue();
-      mockUserRepository.remove.mockResolvedValue();
+      mockUserValidationService.validateUserExistence.mockResolvedValue({
+        id: userIdToDelete,
+        isDefaultAdmin: false,
+      } as User);
+      mockUserValidationService.validateDeleteSelfOperation.mockResolvedValue(
+        undefined,
+      );
+      mockUserValidationService.validateDeleteKeyForDefaultAdmin.mockResolvedValue(
+        undefined,
+      );
+      mockUserRepository.remove.mockResolvedValue(undefined);
 
-      await userService.deleteUser(userIdToDelete, loggedInUserId);
+      await userService.deleteUser(
+        userIdToDelete,
+        loggedInUserId,
+        'delete-key',
+      );
 
       expect(
         mockUserValidationService.validateUserExistence,
@@ -505,6 +526,12 @@ describe('UserService', () => {
       expect(
         mockUserValidationService.validateDeleteSelfOperation,
       ).toHaveBeenCalledWith(userIdToDelete, loggedInUserId);
+      expect(
+        mockUserValidationService.validateDeleteKeyForDefaultAdmin,
+      ).toHaveBeenCalledWith(
+        { id: userIdToDelete, isDefaultAdmin: false },
+        'delete-key',
+      );
       expect(mockUserRepository.remove).toHaveBeenCalledWith(userIdToDelete);
     });
 
@@ -523,7 +550,7 @@ describe('UserService', () => {
       );
 
       await expect(
-        userService.deleteUser(userIdToDelete, loggedInUserId),
+        userService.deleteUser(userIdToDelete, loggedInUserId, 'delete-key'),
       ).rejects.toThrow(ApplicationError);
 
       expect(mockUserRepository.remove).not.toHaveBeenCalled();
@@ -538,11 +565,12 @@ describe('UserService', () => {
       );
 
       await expect(
-        userService.deleteUser(userIdToDelete, loggedInUserId),
+        userService.deleteUser(userIdToDelete, loggedInUserId, 'delete-key'),
       ).rejects.toThrow(ApplicationError);
 
       expect(mockUserRepository.remove).not.toHaveBeenCalled();
     });
+
     it('should throw an error if the user ID to delete is invalid', async () => {
       const userIdToDelete = 'invalid-id';
       const loggedInUserId = '1';
@@ -552,11 +580,12 @@ describe('UserService', () => {
       );
 
       await expect(
-        userService.deleteUser(userIdToDelete, loggedInUserId),
+        userService.deleteUser(userIdToDelete, loggedInUserId, 'delete-key'),
       ).rejects.toThrow(ApplicationError);
 
       expect(mockUserRepository.remove).not.toHaveBeenCalled();
     });
+
     it('should throw an error if the user has active dependencies', async () => {
       const userIdToDelete = '2';
       const loggedInUserId = '1';
@@ -567,30 +596,39 @@ describe('UserService', () => {
       mockUserRepository.remove.mockRejectedValue(dependencyError);
 
       await expect(
-        userService.deleteUser(userIdToDelete, loggedInUserId),
+        userService.deleteUser(userIdToDelete, loggedInUserId, 'delete-key'),
       ).rejects.toThrow(ApplicationError);
 
       expect(mockUserRepository.remove).toHaveBeenCalledWith(userIdToDelete);
     });
+
     it('should handle concurrent delete attempts gracefully', async () => {
       const userIdToDelete = '2';
       const loggedInUserId = '1';
-      mockUserValidationService.validateUserExistence.mockResolvedValue();
-      mockUserValidationService.validateDeleteSelfOperation.mockResolvedValue();
+      mockUserValidationService.validateUserExistence.mockResolvedValue({
+        id: userIdToDelete,
+        isDefaultAdmin: false,
+      } as User);
+      mockUserValidationService.validateDeleteSelfOperation.mockResolvedValue(
+        undefined,
+      );
+      mockUserValidationService.validateDeleteKeyForDefaultAdmin.mockResolvedValue(
+        undefined,
+      );
       const concurrentError = new ApplicationError(
         'Concurrent modification error',
         409,
       );
       mockUserRepository.remove
         .mockRejectedValueOnce(concurrentError)
-        .mockResolvedValueOnce();
+        .mockResolvedValueOnce(undefined);
 
       await expect(
-        userService.deleteUser(userIdToDelete, loggedInUserId),
+        userService.deleteUser(userIdToDelete, loggedInUserId, 'delete-key'),
       ).rejects.toThrow(ApplicationError);
 
       await expect(
-        userService.deleteUser(userIdToDelete, loggedInUserId),
+        userService.deleteUser(userIdToDelete, loggedInUserId, 'delete-key'),
       ).resolves.toBeUndefined();
 
       expect(mockUserRepository.remove).toHaveBeenCalledTimes(2);
