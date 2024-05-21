@@ -8,7 +8,7 @@ export class EmailService {
   constructor() {
     this.transporter = nodemailer.createTransport({
       service: 'outlook',
-      host: 'smtp-mail.outlook.com',
+      host: 'smtp.office365.com',
       port: 587,
       secure: false,
       auth: {
