@@ -14,18 +14,22 @@ class CreateAdminSeed {
       const userRepository = AppDataSource.getRepository(User);
 
       const adminData = {
-        firstName: 'Fernando',
-        lastName: 'Mercado',
-        cpf: '351.360.828-44',
-        email: 'admin@admin.com',
-        password: 'Senh@123',
-        confirmPassword: 'Senh@123',
+        firstName: '',
+        lastName: '',
+        cpf: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
         role: UserRole.Admin,
+        isDefaultAdmin: true,
+        deleteKey: '',
       };
 
       const validatedData = UserValidator.validateCreateUser.parse(adminData);
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword, ...dataToSave } = validatedData;
+
+      console.log('Data to save:', dataToSave);
 
       const adminExists = await userRepository.findOneBy({
         cpf: dataToSave.cpf,
@@ -38,7 +42,6 @@ class CreateAdminSeed {
 
       dataToSave.password = await hash(dataToSave.password, 8);
 
-      console.log(dataToSave);
       const admin = userRepository.create(dataToSave as DeepPartial<User>);
       await userRepository.save(admin);
       console.log('Admin user created successfully');
