@@ -155,6 +155,13 @@ Se preferir, você pode usar a versão hospedada da aplicação. Acesse a URL:
 
 ## 📡 Rotas da API
 
+### 📋 Validação de Dados
+
+Este projeto requer que todos os dados fornecidos sejam válidos. Para ajudar a garantir a validade dos dados, você pode utilizar os seguintes links:
+
+- [Gerador de CPF](https://www.4devs.com.br/gerador_de_cpf)
+- [Gerador de CEP](https://www.4devs.com.br/gerador_de_cep)
+
 ### 🔒 Autenticação
 
 #### 🔑 Login
@@ -165,10 +172,11 @@ Se preferir, você pode usar a versão hospedada da aplicação. Acesse a URL:
 - **Body:**
   ```json
   {
-    "cpf": "string",
-    "password": "string"
+    "cpf": "652.980.260-60",
+    "password": "@Dmin123"
   }
   ```
+  Nota: Apenas administradores podem criar novos usuários. Para facilitar o teste inicial, um usuário administrador padrão já está pré-configurado no sistema. Use as credenciais acima para fazer login como administrador.
 
 ### 👥 Usuários
 
