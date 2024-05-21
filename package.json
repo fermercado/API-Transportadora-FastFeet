@@ -11,7 +11,6 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
     "seed": "ts-node src/infrastructure/shared/seed/createAdminSeed.ts"
   },
   "devDependencies": {
@@ -47,6 +46,7 @@
     "cloudinary": "^1.21.0",
     "cpf-cnpj-validator": "^1.0.3",
     "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5",
     "eslint": "^8.57.0",
     "express": "^4.19.2",
     "geolib": "^3.3.4",
