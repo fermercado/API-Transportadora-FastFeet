@@ -8,7 +8,6 @@ import './infrastructure/dependencyInjection/servicesDependencies';
 import './infrastructure/dependencyInjection/orderDependencias';
 import './infrastructure/dependencyInjection/trackingCodeDependencies';
 import './infrastructure/dependencyInjection/notificationDependencies';
-import cors from 'cors';
 
 const PORT = process.env.PORT || 3000;
 
@@ -18,14 +17,6 @@ AppDataSource.initialize()
 
     import('./app').then(({ createApp }) => {
       const app = createApp();
-
-      app.use(
-        cors({
-          origin: '*',
-          methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-          allowedHeaders: ['Content-Type', 'Authorization'],
-        }),
-      );
 
       app.listen(PORT, () => {
         console.log(`Server running on http://localhost:${PORT}`);
