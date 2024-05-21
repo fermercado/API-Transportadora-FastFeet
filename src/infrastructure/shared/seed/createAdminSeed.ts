@@ -1,10 +1,13 @@
 import 'reflect-metadata';
-import { hash } from 'bcrypt';
+import { hash } from 'bcryptjs';
 import AppDataSource from '../../orm/ormconfig';
 import { User } from '../../../domain/entities/User';
 import { UserValidator } from '../../../domain/validators/UserValidator';
 import { UserRole } from '../../../domain/enums/UserRole';
 import { DeepPartial } from 'typeorm';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 class CreateAdminSeed {
   private static async createAdmin() {
@@ -14,22 +17,21 @@ class CreateAdminSeed {
       const userRepository = AppDataSource.getRepository(User);
 
       const adminData = {
-        firstName: '',
-        lastName: '',
-        cpf: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
+        firstName: process.env.ADMIN_FIRST_NAME || '',
+        lastName: process.env.ADMIN_LAST_NAME || '',
+        cpf: process.env.ADMIN_CPF || '',
+        email: process.env.ADMIN_EMAIL || '',
+        password: process.env.ADMIN_PASSWORD || '',
+        confirmPassword: process.env.ADMIN_CONFIRM_PASSWORD || '',
         role: UserRole.Admin,
         isDefaultAdmin: true,
-        deleteKey: '',
+        deleteKey: process.env.ADMIN_DELETE_KEY || '',
       };
 
       const validatedData = UserValidator.validateCreateUser.parse(adminData);
+
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword, ...dataToSave } = validatedData;
-
-      console.log('Data to save:', dataToSave);
 
       const adminExists = await userRepository.findOneBy({
         cpf: dataToSave.cpf,
