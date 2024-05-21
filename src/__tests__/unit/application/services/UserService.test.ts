@@ -10,7 +10,7 @@ import { User } from '../../../../domain/entities/User';
 import { UserRole } from '../../../../domain/enums/UserRole';
 import { ApplicationError } from '../../../../infrastructure/shared/errors/ApplicationError';
 import { UpdateUserDto } from '../../../../application/dtos/user/UpdateUserDto';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 describe('UserService', () => {
   let userService: UserService;
