@@ -151,7 +151,10 @@ http://localhost:3000/
 
 ### Usando a Aplicação Hospedada
 
-Se preferir, você pode usar a versão hospedada da aplicação. Acesse a URL:
+Você pode acessar a documentação interativa da API FastFeet através do seguinte link:  
+[Documentação da API FastFeet](https://api-transportadora-fastfeet.onrender.com/api-docs/#/)
+
+**Nota:** A aplicação está hospedada no Render, o que pode resultar em uma inicialização mais lenta se o serviço estiver inativo. Aguarde alguns segundos após abrir o link.
 
 ## 📡 Rotas da API
 
