@@ -1,7 +1,7 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { PasswordHasher } from '../../../../infrastructure/shared/utils/PasswordHasher';
 
-jest.mock('bcrypt');
+jest.mock('bcryptjs');
 
 describe('PasswordHasher', () => {
   let passwordHasher: PasswordHasher;
