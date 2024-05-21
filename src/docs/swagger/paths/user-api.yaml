@@ -154,17 +154,17 @@ components:
     CreateUserDto:
       type: object
       required:
-        - lastName
         - firstName
+        - lastName
         - cpf
         - email
         - password
         - confirmPassword
         - role
       properties:
-        lastName:
-          type: string
         firstName:
+          type: string
+        lastName:
           type: string
         cpf:
           type: string
@@ -183,9 +183,9 @@ components:
     UpdateUserDto:
       type: object
       properties:
-        lastName:
-          type: string
         firstName:
+          type: string
+        lastName:
           type: string
         cpf:
           type: string
