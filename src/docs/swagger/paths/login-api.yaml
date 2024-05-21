@@ -3,8 +3,6 @@ info:
   title: Authentication API
   description: API for user authentication
   version: 1.0.0
-servers:
-  - url: http://localhost:3000
 paths:
   /api/v1/login:
     post:

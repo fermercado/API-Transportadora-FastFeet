@@ -3,8 +3,6 @@ info:
   title: Delivery API
   description: API for managing deliveries
   version: 1.0.0
-servers:
-  - url: http://localhost:3000
 paths:
   paths:
   /api/v1/deliveries:
