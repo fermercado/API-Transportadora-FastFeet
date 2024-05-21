@@ -6,7 +6,7 @@ import { CreateUserDto } from '../dtos/user/CreateUserDto';
 import { UpdateUserDto } from '../dtos/user/UpdateUserDto';
 import { ResponseUserDto } from '../dtos/user/ResponseUserDto';
 import { UserMapper } from '../../application/mappers/UserMappers';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { UserFilter } from '../../domain/interface/UserFilter';
 import { UserRole } from '../../domain/enums/UserRole';
 import { PasswordHasher } from '../../infrastructure/shared/utils/PasswordHasher';
