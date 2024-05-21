@@ -46,12 +46,23 @@ export class UserService {
     return this.userMapper.toResponseUserDto(updatedUser);
   }
 
-  public async deleteUser(id: string, loggedInUserId: string): Promise<void> {
-    await this.userValidationService.validateUserExistence(id);
+  public async deleteUser(
+    id: string,
+    loggedInUserId: string,
+    providedDeleteKey?: string,
+  ): Promise<void> {
+    const user = await this.userValidationService.validateUserExistence(id);
+
     await this.userValidationService.validateDeleteSelfOperation(
       id,
       loggedInUserId,
     );
+
+    await this.userValidationService.validateDeleteKeyForDefaultAdmin(
+      user,
+      providedDeleteKey,
+    );
+
     await this.userRepository.remove(id);
   }
 

@@ -11,7 +11,7 @@ export class AuthService {
   private jwtSecret: Secret;
 
   constructor(
-    @inject('UserService') private userService: UserService,
+    @inject(UserService) private userService: UserService,
     @inject('JWT_SECRET') jwtSecret: Secret = process.env.JWT_SECRET || '',
   ) {
     this.jwtSecret = jwtSecret;

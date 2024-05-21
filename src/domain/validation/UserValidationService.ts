@@ -7,6 +7,7 @@ import { UniqueValidationUtils } from '../../infrastructure/shared/utils/uniqueV
 import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 import { ZodIssue } from 'zod';
 import { ErrorDetail } from '../../@types/error-types';
+import { User } from '../entities/User';
 
 @injectable()
 export class UserValidationService {
@@ -49,15 +50,16 @@ export class UserValidationService {
     await this.validateUniqueness(userData, id);
   }
 
-  async validateUserExistence(id: string): Promise<void> {
+  public async validateUserExistence(id: string): Promise<User> {
     const user = await this.userRepository.findById(id);
     if (!user) {
-      const notFoundError: ErrorDetail = {
+      const notFoundError = {
         key: 'id',
         value: 'No user found with the provided ID.',
       };
       throw new ApplicationError('User not found', 404, true, [notFoundError]);
     }
+    return user;
   }
 
   private async validateUniqueness(
@@ -81,10 +83,29 @@ export class UserValidationService {
     loggedInUserId: string,
   ): Promise<void> {
     if (userIdToDelete === loggedInUserId) {
-      const details: ErrorDetail[] = [
+      const details = [
         { key: 'deleteSelf', value: 'You cannot delete your own account.' },
       ];
       throw new ApplicationError('Forbidden operation', 403, true, details);
+    }
+  }
+
+  public async validateDeleteKeyForDefaultAdmin(
+    user: User,
+    providedDeleteKey?: string,
+  ): Promise<void> {
+    if (user.isDefaultAdmin) {
+      if (!providedDeleteKey || providedDeleteKey !== user.deleteKey) {
+        const details = [
+          { key: 'deleteKey', value: 'Invalid delete key for default admin.' },
+        ];
+        throw new ApplicationError(
+          'Unauthorized operation',
+          401,
+          true,
+          details,
+        );
+      }
     }
   }
 }

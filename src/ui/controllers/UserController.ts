@@ -17,9 +17,11 @@ export class UserController {
       res.status(201).json(user);
     } catch (error) {
       next(
-        new ApplicationError('Failed to create user', 500, true, [
-          { key: 'internal', value: 'Error during user creation' },
-        ]),
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to create user', 500, true, [
+              { key: 'internal', value: 'Error during user creation' },
+            ]),
       );
     }
   }
@@ -34,9 +36,11 @@ export class UserController {
       res.status(200).json(user);
     } catch (error) {
       next(
-        new ApplicationError('Failed to update user', 500, true, [
-          { key: 'internal', value: 'Error during user update' },
-        ]),
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to update user', 500, true, [
+              { key: 'internal', value: 'Error during user update' },
+            ]),
       );
     }
   }
@@ -49,13 +53,21 @@ export class UserController {
     try {
       const userIdToDelete = req.params.id;
       const loggedInUserId = req.user.id;
-      await this.userService.deleteUser(userIdToDelete, loggedInUserId);
+      const { deleteKey } = req.body;
+
+      await this.userService.deleteUser(
+        userIdToDelete,
+        loggedInUserId,
+        deleteKey,
+      );
       res.status(204).send();
     } catch (error) {
       next(
-        new ApplicationError('Failed to delete user', 500, true, [
-          { key: 'internal', value: 'Error during user deletion' },
-        ]),
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to delete user', 500, true, [
+              { key: 'internal', value: 'Error during user deletion' },
+            ]),
       );
     }
   }
@@ -87,9 +99,11 @@ export class UserController {
       res.status(200).json(users);
     } catch (error) {
       next(
-        new ApplicationError('Failed to list users', 500, true, [
-          { key: 'internal', value: 'Error during user listing' },
-        ]),
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to list users', 500, true, [
+              { key: 'internal', value: 'Error during user listing' },
+            ]),
       );
     }
   }

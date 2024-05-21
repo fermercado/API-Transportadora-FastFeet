@@ -8,9 +8,6 @@ export class ExternalServices {
       const response = await axios.get(
         `https://viacep.com.br/ws/${zipCode}/json/`,
       );
-      console.log(
-        `Response from viacep.com.br: ${JSON.stringify(response.data)}`,
-      );
 
       ExternalValidator.validateCEPResponse(response.data);
 
@@ -20,7 +17,6 @@ export class ExternalServices {
 
       return { ...response.data, ...coordinates };
     } catch (error) {
-      console.error('Error searching for ZIP code', error);
       throw new Error('Failed to retrieve ZIP code information.');
     }
   }
@@ -45,13 +41,11 @@ export class ExternalServices {
         const { lat, lng } = response.data.results[0].geometry;
         return { latitude: lat, longitude: lng };
       } else {
-        console.warn('No results found for address:', address);
         throw new Error(
           'Failed to retrieve coordinates for the given address.',
         );
       }
     } catch (error) {
-      console.error('Error obtaining coordinates from address', error);
       throw new Error('Failed to retrieve coordinates for the given address.');
     }
   }
