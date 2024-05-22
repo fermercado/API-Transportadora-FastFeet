@@ -130,6 +130,14 @@ Para rodar os testes, use o seguinte comando:
 npm run test
 ```
 
+### ✨ Seeding Admin User
+
+Para criar um usuário administrador inicial, você pode usar o seguinte comando:
+
+```sh
+npm run seed
+```
+
 ### 🚀 Iniciando o Servidor
 
 Para iniciar o servidor, use o seguinte comando:
@@ -148,13 +156,6 @@ Para acessar a documentação Swagger e testar os endpoints:
 http://localhost:3000/
 
 ```
-
-### Usando a Aplicação Hospedada
-
-Você pode acessar a documentação interativa da API FastFeet através do seguinte link:  
-[Documentação da API FastFeet](https://api-transportadora-fastfeet.onrender.com/api-docs/#/)
-
-**Nota:** A aplicação está hospedada no Render, o que pode resultar em uma inicialização mais lenta se o serviço estiver inativo. Aguarde alguns segundos após abrir o link.
 
 ## 📡 Rotas da API
 
@@ -175,11 +176,11 @@ Este projeto requer que todos os dados fornecidos sejam válidos. Para ajudar a 
 - **Body:**
   ```json
   {
-    "cpf": "652.980.260-60",
-    "password": "@Dmin123"
+    "cpf": "string",
+    "password": "string"
   }
   ```
-  Nota: Apenas administradores podem criar novos usuários. Para facilitar o teste inicial, um usuário administrador padrão já está pré-configurado no sistema. Use as credenciais acima para fazer login como administrador.
+  **Nota**: Use as credencias que foram criadas pelo **seeding admin user**.
 
 ### 👥 Usuários
 
