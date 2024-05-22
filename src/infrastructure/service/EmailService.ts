@@ -7,13 +7,15 @@ export class EmailService {
 
   constructor() {
     this.transporter = nodemailer.createTransport({
-      service: 'outlook',
-      host: 'smtp.office365.com',
+      host: 'smtp-mail.outlook.com',
       port: 587,
       secure: false,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
+      },
+      tls: {
+        ciphers: 'SSLv3',
       },
     });
   }
@@ -30,7 +32,7 @@ export class EmailService {
       await this.transporter.sendMail(mailOptions);
       console.log('E-mail enviado com sucesso');
     } catch (error) {
-      console.error('Erro ao enviar e-mail', error);
+      console.error('Erro ao enviar e-mail:', error);
       throw new ApplicationError('Falha ao enviar e-mail', 500, true);
     }
   }
