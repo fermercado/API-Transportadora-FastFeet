@@ -8,7 +8,6 @@ RUN npm install
 
 COPY . .
 
-RUN npm install -g ts-node
 RUN npm run build
 
 EXPOSE 3000
