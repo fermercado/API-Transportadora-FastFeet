@@ -48,6 +48,22 @@ O projeto segue os conceitos de DDD e Clean Architecture, proporcionando uma est
 
 ## 🚀 Começando
 
+## Documentação da API hospedada
+
+Você pode acessar a documentação interativa da API FastFeet através do seguinte link:  
+[Documentação da API FastFeet](https://api-transportadora-fastfeet.onrender.com/api-docs/#/)
+
+**Nota:** A aplicação está hospedada no Render, o que pode resultar em uma inicialização mais lenta se o serviço estiver inativo. Aguarde alguns segundos após abrir o link.
+
+```json
+{
+  "cpf": "652.980.260-60",
+  "password": "@Dmin123"
+}
+```
+
+**Nota:** Apenas administradores podem criar novos usuários. Para facilitar o teste inicial da documentação hospedada, um usuário administrador padrão já está pré-configurado no sistema. Use as credenciais acima para fazer login como administrador.
+
 ### Rodando o Projeto Localmente
 
 Para rodar o projeto localmente, siga os passos abaixo:
@@ -86,7 +102,7 @@ Para rodar o projeto localmente, siga os passos abaixo:
    DB_DATABASE=
 
    # JWT
-   JWT_SECRET=sua_chave_secreta
+   JWT_SECRET=
 
    # Script de seeding
    ADMIN_FIRST_NAME=
@@ -146,7 +162,7 @@ Para iniciar o servidor, use o seguinte comando:
 npm start
 ```
 
-## 📃 Documentação da API com Swagger
+## 📃 Documentação da API com Swagger local
 
 A documentação completa da API está disponível e pode ser acessada via Swagger UI. Isso permite que você visualize e interaja com a API's endpoints diretamente através do navegador.
 
