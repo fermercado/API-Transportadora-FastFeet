@@ -41,6 +41,8 @@ export class OrderService {
       order.recipient.state,
     );
     order.status = OrderStatus.Pending;
+    order.createdAt = new Date();
+    order.updatedAt = new Date();
     const savedOrder = await this.orderRepository.create(order);
     await this.notifyStatusChange(savedOrder);
     return this.orderMapper.toDto(savedOrder);
@@ -55,6 +57,7 @@ export class OrderService {
         id,
         updateOrderDto,
       );
+    order.updatedAt = new Date();
     const updatedOrder = await this.orderRepository.save(order);
     return this.orderMapper.toDto(updatedOrder);
   }
