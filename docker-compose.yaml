@@ -6,6 +6,7 @@ services:
       POSTGRES_DB: ${DB_DATABASE}
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+      TZ: America/Sao_Paulo
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
@@ -35,6 +36,7 @@ services:
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
       OPENCAGE_API_KEY: ${OPENCAGE_API_KEY}
+      TZ: America/Sao_Paulo
     ports:
       - '3000:3000'
     volumes:
