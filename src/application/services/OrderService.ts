@@ -93,6 +93,7 @@ export class OrderService {
     );
     order.status = OrderStatus.AwaitingPickup;
     order.awaitingPickupAt = new Date();
+    order.updatedAt = new Date();
     const savedOrder = await this.orderRepository.save(order);
     await this.notifyStatusChange(savedOrder);
     return this.orderMapper.toDto(savedOrder);
@@ -111,6 +112,7 @@ export class OrderService {
     );
     order.status = OrderStatus.PickedUp;
     order.pickedUpAt = new Date();
+    order.updatedAt = new Date();
     const savedOrder = await this.orderRepository.save(order);
     await this.notifyStatusChange(savedOrder);
     return this.orderMapper.toDto(savedOrder);
@@ -130,6 +132,7 @@ export class OrderService {
     order.deliveryPhoto = imageUrl;
     order.status = OrderStatus.Delivered;
     order.deliveredAt = new Date();
+    order.updatedAt = new Date();
     const savedOrder = await this.orderRepository.save(order);
     await this.notifyStatusChange(savedOrder);
     return this.orderMapper.toDto(savedOrder);
@@ -148,6 +151,7 @@ export class OrderService {
     );
     order.status = OrderStatus.Returned;
     order.returnedAt = new Date();
+    order.updatedAt = new Date();
     const savedOrder = await this.orderRepository.save(order);
     await this.notifyStatusChange(savedOrder);
     return this.orderMapper.toDto(savedOrder);
