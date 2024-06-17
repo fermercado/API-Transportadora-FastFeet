@@ -3,15 +3,9 @@ import { Request, Response, NextFunction } from 'express';
 import { UserService } from '../../../../application/services/UserService';
 import { UserController } from '../../../../ui/controllers/UserController';
 import { ApplicationError } from '../../../../infrastructure/shared/errors/ApplicationError';
-import { UserMapper } from '../../../../application/mappers/UserMappers';
-import { UserValidationService } from '../../../../domain/validation/UserValidationService';
-import { UserRepository } from '../../../../infrastructure/orm/repositories/UserRepository';
 import { UserRole } from '../../../../domain/enums/UserRole';
 
 jest.mock('../../../../application/services/UserService');
-jest.mock('../../../../application/mappers/UserMappers');
-jest.mock('../../../../domain/validation/UserValidationService');
-jest.mock('../../../../infrastructure/orm/repositories/UserRepository');
 
 describe('UserController', () => {
   let userServiceMock: jest.Mocked<UserService>;
@@ -22,18 +16,16 @@ describe('UserController', () => {
   let jsonMock: jest.Mock;
 
   beforeEach(() => {
-    const userValidationService = new UserValidationService(
-      {} as any,
-      {} as any,
-    );
-    const userRepository = new UserRepository({} as any);
-    const userMapper = new UserMapper();
+    const userRepository = {} as any;
+    const userValidationService = {} as any;
+    const userMapper = {} as any;
+    const someDependency = {} as any;
 
     userServiceMock = new UserService(
       userRepository,
       userValidationService,
       userMapper,
-      {} as any,
+      someDependency,
     ) as jest.Mocked<UserService>;
 
     userController = new UserController(userServiceMock);
@@ -154,11 +146,11 @@ describe('UserController', () => {
 
       await userController.deleteUser(req as Request, res as Response, next);
 
-      expect(userServiceMock.deleteUser).toHaveBeenCalledWith(
-        '1',
-        'logged-in-user-id',
-        'valid-delete-key',
-      );
+      expect(userServiceMock.deleteUser).toHaveBeenCalledWith({
+        id: '1',
+        loggedInUserId: 'logged-in-user-id',
+        providedDeleteKey: 'valid-delete-key',
+      });
       expect(res.status).toHaveBeenCalledWith(204);
       expect(res.send).toHaveBeenCalled();
     });

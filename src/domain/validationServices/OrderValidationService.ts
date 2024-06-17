@@ -1,24 +1,29 @@
 import { inject, injectable } from 'tsyringe';
 import { DataSource } from 'typeorm';
-import { Recipient } from '../../domain/entities/Recipient';
-import { User } from '../../domain/entities/User';
-import { Order } from '../../domain/entities/Order';
-import { IOrderRepository } from '../../domain/repositories/IOrderRepository';
+import { Recipient } from '../entities/Recipient';
+import { User } from '../entities/User';
+import { Order } from '../entities/Order';
+import { IOrderRepository } from '../repositories/IOrderRepository';
 import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 import { CreateRecipientDto } from '../../application/dtos/recipient/CreateRecipientDto';
 import { UpdateRecipientDto } from '../../application/dtos/recipient/UpdateRecipientDto';
-import { OrderStatus } from '../../domain/enums/OrderStatus';
+import { TransitionOrderDto } from '../../application/dtos/order/TransitionOrderDto';
+import { OperationOrderDto } from '../../application/dtos/order/OperationOrderDto';
+import { FindNearbyDeliveriesDto } from '../../application/dtos/order/FindNearbyDeliveriesDto';
+import { OrderStatus } from '../enums/OrderStatus';
 import { getDistance } from 'geolib';
-import { ExternalServices } from '../../infrastructure/externalService/ExternalService';
+import { CepValidationProvider } from '../../infrastructure/providers/CepValidationProvider';
 import { UpdateOrderDto } from '../../application/dtos/order/UpdateOrderDto';
-import OrderValidator from '../../domain/validators/OrderValidator';
-import { UserRole } from '../../domain/enums/UserRole';
+import OrderValidator from '../validators/OrderValidator';
+import { UserRole } from '../enums/UserRole';
 
 @injectable()
 export class OrderValidationService {
   constructor(
     @inject('DataSource') private dataSource: DataSource,
     @inject('IOrderRepository') private orderRepository: IOrderRepository,
+    @inject('CepValidationProvider')
+    private cepValidationProvider: CepValidationProvider,
   ) {}
 
   async validateRecipient(
@@ -92,12 +97,8 @@ export class OrderValidationService {
     return order;
   }
 
-  async validateOrderTransition(
-    orderId: string,
-    nextStatus: OrderStatus,
-    deliverymanId: string,
-    userRole: UserRole,
-  ): Promise<Order> {
+  async validateOrderTransition(dto: TransitionOrderDto): Promise<Order> {
+    const { orderId, nextStatus, deliverymanId, userRole } = dto;
     const order = await this.validateOrderExistence(orderId);
 
     const isDeliveryman = order.deliveryman?.id === deliverymanId;
@@ -142,11 +143,8 @@ export class OrderValidationService {
     return transitions[currentStatus]?.includes(nextStatus) ?? false;
   }
 
-  async validateOrderForDelivery(
-    orderId: string,
-    deliverymanId: string,
-    imageFile: Express.Multer.File,
-  ): Promise<Order> {
+  async validateOrderForDelivery(dto: OperationOrderDto): Promise<Order> {
+    const { orderId, deliverymanId, imageFile } = dto;
     const order = await this.validateOrderExistence(orderId);
     if (order.deliveryman?.id !== deliverymanId) {
       throw new ApplicationError(
@@ -164,10 +162,10 @@ export class OrderValidationService {
   }
 
   async findNearbyDeliveries(
-    deliverymanId: string,
-    zipCode: string,
+    dto: FindNearbyDeliveriesDto,
     orderRepository: IOrderRepository,
   ): Promise<{ order: Order; distance: string }[]> {
+    const { deliverymanId, zipCode } = dto;
     if (!zipCode) {
       throw new ApplicationError('Zip code not provided', 400);
     }
@@ -180,8 +178,25 @@ export class OrderValidationService {
       throw new ApplicationError('No deliveries found', 404);
     }
 
-    const { latitude: originLat, longitude: originLng } =
-      await ExternalServices.getAddressByZipCode(zipCode);
+    const addressInfo =
+      await this.cepValidationProvider.getAddressByZipCode(zipCode);
+
+    let { latitude: originLat, longitude: originLng } = addressInfo;
+
+    if (!originLat || !originLng) {
+      const fullAddress = `${addressInfo.logradouro}, ${addressInfo.localidade}, ${addressInfo.uf}`;
+      const coordinates =
+        await this.cepValidationProvider.getCoordinatesFromAddress(fullAddress);
+      originLat = coordinates.latitude;
+      originLng = coordinates.longitude;
+    }
+
+    if (!originLat || !originLng) {
+      throw new ApplicationError(
+        'Invalid zip code or address information not available',
+        400,
+      );
+    }
 
     const deliveriesWithDistance = deliveries
       .filter((order) => order.status !== OrderStatus.Delivered)
@@ -189,9 +204,6 @@ export class OrderValidationService {
         const { latitude: destLat, longitude: destLng } = order.recipient;
 
         if (!destLat || !destLng) {
-          console.log(
-            `Latitude and longitude information missing for the order with ID ${order.id}`,
-          );
           return null;
         }
 
@@ -214,7 +226,6 @@ export class OrderValidationService {
     }
 
     return deliveriesWithDistance.sort((a, b) => {
-      if (!a || !b) return 0;
       return parseFloat(a.distance) - parseFloat(b.distance);
     });
   }

@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { container } from 'tsyringe';
-import { UserValidationService } from '../../../../domain/validation/UserValidationService';
+import { UserValidationService } from '../../../../domain/validationServices/UserValidationService';
 import { IUserRepository } from '../../../../domain/repositories/IUserRepository';
 import { UniqueValidationUtils } from '../../../../infrastructure/shared/utils/uniqueValidationUtils';
 import { UserValidator } from '../../../../domain/validators/UserValidator';

@@ -1,27 +1,19 @@
 import axios from 'axios';
-import { ExternalValidator } from './ExternalValidator';
 import 'dotenv/config';
 
-export class ExternalServices {
-  public static async getAddressByZipCode(zipCode: string): Promise<any> {
+export class CepValidationProvider {
+  public async getAddressByZipCode(zipCode: string): Promise<any> {
     try {
       const response = await axios.get(
         `https://viacep.com.br/ws/${zipCode}/json/`,
       );
-
-      ExternalValidator.validateCEPResponse(response.data);
-
-      const coordinates = await this.getCoordinatesFromAddress(
-        `${response.data.logradouro}, ${response.data.localidade}, ${response.data.uf}`,
-      );
-
-      return { ...response.data, ...coordinates };
+      return response.data;
     } catch (error) {
       throw new Error('Failed to retrieve ZIP code information.');
     }
   }
 
-  private static async getCoordinatesFromAddress(
+  public async getCoordinatesFromAddress(
     address: string,
   ): Promise<{ latitude?: number; longitude?: number }> {
     try {

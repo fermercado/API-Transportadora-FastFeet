@@ -1,9 +1,9 @@
 import { injectable, inject } from 'tsyringe';
 import { IRecipientRepository } from '../../domain/repositories/IRecipientRepository';
-import { ExternalServices } from '../../infrastructure/externalService/ExternalService';
+import { CepValidationProvider } from '../../infrastructure/providers/CepValidationProvider';
 import { CreateRecipientDto } from '../dtos/recipient/CreateRecipientDto';
 import { UpdateRecipientDto } from '../dtos/recipient/UpdateRecipientDto';
-import { RecipientValidationService } from '../../domain/validation/RecipientValidationService';
+import { RecipientValidationService } from '../../domain/validationServices/RecipientValidationService';
 import { RecipientMapper } from '../mappers/RecipientMapper';
 import { RecipientResponseDto } from '../dtos/recipient/ResponseRecipientDto';
 import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
@@ -17,6 +17,8 @@ export class RecipientService {
     private recipientValidationService: RecipientValidationService,
     @inject('RecipientMapper')
     private recipientMapper: RecipientMapper,
+    @inject('CepValidationProvider')
+    private cepValidationProvider: CepValidationProvider,
   ) {}
 
   public async createRecipient(
@@ -86,7 +88,7 @@ export class RecipientService {
       recipientData.zipCode as string,
     );
 
-    const addressInfo = await ExternalServices.getAddressByZipCode(
+    const addressInfo = await this.cepValidationProvider.getAddressByZipCode(
       recipientData.zipCode as string,
     );
     await this.recipientValidationService.validateAddressCompleteness(
@@ -94,14 +96,18 @@ export class RecipientService {
       recipientData,
     );
 
+    const fullAddress = `${addressInfo.logradouro}, ${addressInfo.localidade}, ${addressInfo.uf}`;
+    const coordinates =
+      await this.cepValidationProvider.getCoordinatesFromAddress(fullAddress);
+
     return {
       ...recipientData,
       street: addressInfo.logradouro || recipientData.street,
       neighborhood: addressInfo.bairro || recipientData.neighborhood,
       city: addressInfo.localidade || recipientData.city,
       state: addressInfo.uf || recipientData.state,
-      latitude: addressInfo.latitude ?? recipientData.latitude,
-      longitude: addressInfo.longitude ?? recipientData.longitude,
+      latitude: coordinates.latitude ?? recipientData.latitude,
+      longitude: coordinates.longitude ?? recipientData.longitude,
     };
   }
 }

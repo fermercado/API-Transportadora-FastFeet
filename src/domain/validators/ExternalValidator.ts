@@ -1,4 +1,5 @@
 const MINIMUM_CONFIDENCE_THRESHOLD = 5;
+
 export class ExternalValidator {
   static validateCEPResponse(data: any): void {
     if (data.erro) {

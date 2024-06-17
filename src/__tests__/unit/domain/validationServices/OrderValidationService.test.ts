@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { Repository } from 'typeorm';
-import { OrderValidationService } from '../../../../domain/validation/OrderValidationService';
+import { OrderValidationService } from '../../../../domain/validationServices/OrderValidationService';
 import { Recipient } from '../../../../domain/entities/Recipient';
 import { Order } from '../../../../domain/entities/Order';
 import { ApplicationError } from '../../../../infrastructure/shared/errors/ApplicationError';
@@ -11,23 +11,21 @@ import { User } from '../../../../domain/entities/User';
 import OrderValidator from '../../../../domain/validators/OrderValidator';
 import { OrderStatus } from '../../../../domain/enums/OrderStatus';
 import { getDistance } from 'geolib';
-import { ExternalServices } from '../../../../infrastructure/externalService/ExternalService';
+import { CepValidationProvider } from '../../../../infrastructure/providers/CepValidationProvider';
+import { container } from 'tsyringe';
 
 jest.mock('geolib', () => ({
   getDistance: jest.fn(),
 }));
 
-jest.mock('../../../../infrastructure/externalService/ExternalService', () => ({
-  ExternalServices: {
-    getAddressByZipCode: jest.fn(),
-  },
-}));
+jest.mock('../../../../infrastructure/providers/CepValidationProvider');
 
 jest.mock('../../../../domain/validators/OrderValidator');
 
 describe('OrderValidationService', () => {
   let mockDataSource: { getRepository: jest.Mock };
   let mockOrderRepository: jest.Mocked<IOrderRepository>;
+  let cepValidationProvider: jest.Mocked<CepValidationProvider>;
   let service: OrderValidationService;
 
   beforeEach(() => {
@@ -42,9 +40,28 @@ describe('OrderValidationService', () => {
       remove: jest.fn(),
     } as unknown as jest.Mocked<IOrderRepository>;
 
+    cepValidationProvider = {
+      getAddressByZipCode: jest.fn().mockResolvedValue({
+        logradouro: 'Test Street',
+        bairro: 'Test Neighborhood',
+        localidade: 'Test City',
+        uf: 'TS',
+        latitude: 1,
+        longitude: 1,
+      }),
+      getCoordinatesFromAddress: jest.fn().mockResolvedValue({
+        latitude: 1,
+        longitude: 1,
+      }),
+    } as unknown as jest.Mocked<CepValidationProvider>;
+
+    container.clearInstances();
+    container.registerInstance('CepValidationProvider', cepValidationProvider);
+
     service = new OrderValidationService(
       mockDataSource as any,
       mockOrderRepository,
+      cepValidationProvider,
     );
   });
 
@@ -127,7 +144,7 @@ describe('OrderValidationService', () => {
     it('should throw an error if the deliveryman is not found', async () => {
       const mockUserRepo = {
         findOneBy: jest.fn().mockResolvedValue(null),
-      } as unknown as jest.Mocked<Repository<any>>;
+      } as unknown as jest.Mocked<Repository<User>>;
 
       mockDataSource.getRepository.mockReturnValue(mockUserRepo);
 
@@ -137,10 +154,10 @@ describe('OrderValidationService', () => {
     });
 
     it('should throw an error if the user is not a deliveryman', async () => {
-      const user = { id: 'valid-id', role: UserRole.Admin };
+      const user = { id: 'valid-id', role: UserRole.Admin } as User;
       const mockUserRepo = {
         findOneBy: jest.fn().mockResolvedValue(user),
-      } as unknown as jest.Mocked<Repository<any>>;
+      } as unknown as jest.Mocked<Repository<User>>;
 
       mockDataSource.getRepository.mockReturnValue(mockUserRepo);
 
@@ -150,10 +167,10 @@ describe('OrderValidationService', () => {
     });
 
     it('should return the deliveryman if valid', async () => {
-      const user = { id: 'valid-id', role: UserRole.Deliveryman };
+      const user = { id: 'valid-id', role: UserRole.Deliveryman } as User;
       const mockUserRepo = {
         findOneBy: jest.fn().mockResolvedValue(user),
-      } as unknown as jest.Mocked<Repository<any>>;
+      } as unknown as jest.Mocked<Repository<User>>;
 
       mockDataSource.getRepository.mockReturnValue(mockUserRepo);
 
@@ -179,6 +196,7 @@ describe('OrderValidationService', () => {
       expect(result).toEqual(order);
     });
   });
+
   describe('validateAndUpdateOrderDetails', () => {
     it('should validate and update recipient and deliveryman if both are provided', async () => {
       const order = { id: 'order-id' } as Order;
@@ -308,6 +326,7 @@ describe('OrderValidationService', () => {
       expect(order.deliveryman).toEqual(deliveryman);
     });
   });
+
   describe('validateOrderTransition', () => {
     it('should throw an error for invalid status transitions', async () => {
       const order = {
@@ -318,12 +337,12 @@ describe('OrderValidationService', () => {
       mockOrderRepository.findById.mockResolvedValue(order);
 
       await expect(
-        service.validateOrderTransition(
-          'order-id',
-          OrderStatus.Delivered,
-          'deliveryman-id',
-          UserRole.Deliveryman,
-        ),
+        service.validateOrderTransition({
+          orderId: 'order-id',
+          nextStatus: OrderStatus.Delivered,
+          deliverymanId: 'deliveryman-id',
+          userRole: UserRole.Deliveryman,
+        }),
       ).rejects.toThrow(
         new ApplicationError(
           `Invalid status transition from ${OrderStatus.Pending} to ${OrderStatus.Delivered}`,
@@ -339,12 +358,12 @@ describe('OrderValidationService', () => {
       } as Order;
       mockOrderRepository.findById.mockResolvedValue(order);
 
-      const result = await service.validateOrderTransition(
-        'order-id',
-        OrderStatus.PickedUp,
-        'admin-id',
-        UserRole.Admin,
-      );
+      const result = await service.validateOrderTransition({
+        orderId: 'order-id',
+        nextStatus: OrderStatus.PickedUp,
+        deliverymanId: 'admin-id',
+        userRole: UserRole.Admin,
+      });
       expect(result).toEqual(order);
     });
 
@@ -352,12 +371,12 @@ describe('OrderValidationService', () => {
       mockOrderRepository.findById.mockResolvedValue(undefined);
 
       await expect(
-        service.validateOrderTransition(
-          'order-id',
-          OrderStatus.PickedUp,
-          'deliveryman-id',
-          UserRole.Deliveryman,
-        ),
+        service.validateOrderTransition({
+          orderId: 'order-id',
+          nextStatus: OrderStatus.PickedUp,
+          deliverymanId: 'deliveryman-id',
+          userRole: UserRole.Deliveryman,
+        }),
       ).rejects.toThrow(new ApplicationError('Order not found', 404));
     });
 
@@ -370,12 +389,12 @@ describe('OrderValidationService', () => {
       mockOrderRepository.findById.mockResolvedValue(order);
 
       await expect(
-        service.validateOrderTransition(
-          'order-id',
-          OrderStatus.PickedUp,
-          'deliveryman-id',
-          UserRole.Deliveryman,
-        ),
+        service.validateOrderTransition({
+          orderId: 'order-id',
+          nextStatus: OrderStatus.PickedUp,
+          deliverymanId: 'deliveryman-id',
+          userRole: UserRole.Deliveryman,
+        }),
       ).rejects.toThrow(
         new ApplicationError(
           'You do not have permission to update this order',
@@ -393,12 +412,12 @@ describe('OrderValidationService', () => {
       mockOrderRepository.findById.mockResolvedValue(order);
 
       await expect(
-        service.validateOrderTransition(
-          'order-id',
-          OrderStatus.Delivered,
-          'deliveryman-id',
-          UserRole.Deliveryman,
-        ),
+        service.validateOrderTransition({
+          orderId: 'order-id',
+          nextStatus: OrderStatus.Delivered,
+          deliverymanId: 'deliveryman-id',
+          userRole: UserRole.Deliveryman,
+        }),
       ).rejects.toThrow(
         new ApplicationError(
           `Invalid status transition from ${OrderStatus.Pending} to ${OrderStatus.Delivered}`,
@@ -415,12 +434,12 @@ describe('OrderValidationService', () => {
       } as Order;
       mockOrderRepository.findById.mockResolvedValue(order);
 
-      const result = await service.validateOrderTransition(
-        'order-id',
-        OrderStatus.AwaitingPickup,
-        'deliveryman-id',
-        UserRole.Deliveryman,
-      );
+      const result = await service.validateOrderTransition({
+        orderId: 'order-id',
+        nextStatus: OrderStatus.AwaitingPickup,
+        deliverymanId: 'deliveryman-id',
+        userRole: UserRole.Deliveryman,
+      });
       expect(result).toEqual(order);
     });
 
@@ -428,15 +447,16 @@ describe('OrderValidationService', () => {
       const order = { id: 'order-id', status: OrderStatus.Pending } as Order;
       mockOrderRepository.findById.mockResolvedValue(order);
 
-      const result = await service.validateOrderTransition(
-        'order-id',
-        OrderStatus.AwaitingPickup,
-        'admin-id',
-        UserRole.Admin,
-      );
+      const result = await service.validateOrderTransition({
+        orderId: 'order-id',
+        nextStatus: OrderStatus.AwaitingPickup,
+        deliverymanId: 'admin-id',
+        userRole: UserRole.Admin,
+      });
       expect(result).toEqual(order);
     });
   });
+
   describe('validateOrderForDelivery', () => {
     it('should validate the delivery if all conditions are met', async () => {
       const order = {
@@ -449,11 +469,11 @@ describe('OrderValidationService', () => {
 
       mockOrderRepository.findById.mockResolvedValue(order);
 
-      const result = await service.validateOrderForDelivery(
-        'order-id',
-        'deliveryman-id',
-        mockImageFile,
-      );
+      const result = await service.validateOrderForDelivery({
+        orderId: 'order-id',
+        deliverymanId: 'deliveryman-id',
+        imageFile: mockImageFile,
+      });
       expect(result).toEqual(order);
     });
 
@@ -461,9 +481,11 @@ describe('OrderValidationService', () => {
       mockOrderRepository.findById.mockResolvedValue(undefined);
 
       await expect(
-        service.validateOrderForDelivery('invalid-order-id', 'deliveryman-id', {
-          originalname: 'photo.jpg',
-        } as Express.Multer.File),
+        service.validateOrderForDelivery({
+          orderId: 'invalid-order-id',
+          deliverymanId: 'deliveryman-id',
+          imageFile: { originalname: 'photo.jpg' } as Express.Multer.File,
+        }),
       ).rejects.toThrow(new ApplicationError('Order not found', 404));
     });
 
@@ -475,9 +497,11 @@ describe('OrderValidationService', () => {
       mockOrderRepository.findById.mockResolvedValue(order);
 
       await expect(
-        service.validateOrderForDelivery('order-id', 'deliveryman-id', {
-          originalname: 'photo.jpg',
-        } as Express.Multer.File),
+        service.validateOrderForDelivery({
+          orderId: 'order-id',
+          deliverymanId: 'deliveryman-id',
+          imageFile: { originalname: 'photo.jpg' } as Express.Multer.File,
+        }),
       ).rejects.toThrow(
         new ApplicationError(
           'Only the assigned delivery person can mark the order as delivered',
@@ -494,11 +518,11 @@ describe('OrderValidationService', () => {
       mockOrderRepository.findById.mockResolvedValue(order);
 
       await expect(
-        service.validateOrderForDelivery(
-          'order-id',
-          'deliveryman-id',
-          null as any,
-        ),
+        service.validateOrderForDelivery({
+          orderId: 'order-id',
+          deliverymanId: 'deliveryman-id',
+          imageFile: null as any,
+        }),
       ).rejects.toThrow(
         new ApplicationError(
           'A delivery photo is required to mark as delivered',
@@ -514,18 +538,36 @@ describe('OrderValidationService', () => {
       } as Order;
       mockOrderRepository.findById.mockResolvedValue(order);
 
-      const result = await service.validateOrderForDelivery(
-        'order-id',
-        'deliveryman-id',
-        { originalname: 'photo.jpg' } as Express.Multer.File,
-      );
+      const result = await service.validateOrderForDelivery({
+        orderId: 'order-id',
+        deliverymanId: 'deliveryman-id',
+        imageFile: { originalname: 'photo.jpg' } as Express.Multer.File,
+      });
       expect(result).toEqual(order);
     });
   });
+
   describe('findNearbyDeliveries', () => {
+    beforeEach(() => {
+      cepValidationProvider.getAddressByZipCode.mockResolvedValue({
+        logradouro: 'Test Street',
+        bairro: 'Test Neighborhood',
+        localidade: 'Test City',
+        uf: 'TS',
+        latitude: null,
+        longitude: null,
+      });
+    });
+
     it('should throw an error if zip code is not provided', async () => {
       await expect(
-        service.findNearbyDeliveries('deliveryman-id', '', mockOrderRepository),
+        service.findNearbyDeliveries(
+          {
+            deliverymanId: 'deliveryman-id',
+            zipCode: '',
+          },
+          mockOrderRepository,
+        ),
       ).rejects.toThrow(new ApplicationError('Zip code not provided', 400));
     });
 
@@ -534,8 +576,10 @@ describe('OrderValidationService', () => {
 
       await expect(
         service.findNearbyDeliveries(
-          'deliveryman-id',
-          '12345',
+          {
+            deliverymanId: 'deliveryman-id',
+            zipCode: '12345',
+          },
           mockOrderRepository,
         ),
       ).rejects.toThrow(new ApplicationError('No deliveries found', 404));
@@ -557,15 +601,17 @@ describe('OrderValidationService', () => {
 
       mockOrderRepository.findByFilter.mockResolvedValue(orders);
 
-      (ExternalServices.getAddressByZipCode as jest.Mock).mockResolvedValue({
-        latitude: 0,
-        longitude: 0,
+      cepValidationProvider.getAddressByZipCode.mockResolvedValue({
+        latitude: 1,
+        longitude: 1,
       });
 
       await expect(
         service.findNearbyDeliveries(
-          'deliveryman-id',
-          '12345',
+          {
+            deliverymanId: 'deliveryman-id',
+            zipCode: '12345',
+          },
           mockOrderRepository,
         ),
       ).rejects.toThrow(
@@ -573,25 +619,71 @@ describe('OrderValidationService', () => {
       );
     });
 
-    it('should return nearby deliveries with distances', async () => {
+    it('should throw an error if address information is not available', async () => {
+      cepValidationProvider.getAddressByZipCode.mockResolvedValue({
+        logradouro: 'Test Street',
+        bairro: 'Test Neighborhood',
+        localidade: 'Test City',
+        uf: 'TS',
+        latitude: undefined,
+        longitude: undefined,
+      });
+
+      cepValidationProvider.getCoordinatesFromAddress.mockResolvedValue({
+        latitude: undefined,
+        longitude: undefined,
+      });
+
       const orders = [
         {
           id: 'order-1',
-          recipient: { latitude: 1, longitude: 1 },
+          recipient: { latitude: 10, longitude: 10 },
           status: OrderStatus.Pending,
         },
         {
           id: 'order-2',
-          recipient: { latitude: 2, longitude: 2 },
+          recipient: { latitude: 20, longitude: 20 },
           status: OrderStatus.Pending,
         },
       ] as Order[];
 
       mockOrderRepository.findByFilter.mockResolvedValue(orders);
 
-      (ExternalServices.getAddressByZipCode as jest.Mock).mockResolvedValue({
-        latitude: 0,
-        longitude: 0,
+      await expect(
+        service.findNearbyDeliveries(
+          {
+            deliverymanId: 'deliveryman-id',
+            zipCode: '12345',
+          },
+          mockOrderRepository,
+        ),
+      ).rejects.toThrow(
+        new ApplicationError(
+          'Invalid zip code or address information not available',
+          400,
+        ),
+      );
+    });
+
+    it('should return nearby deliveries with distances', async () => {
+      const orders = [
+        {
+          id: 'order-1',
+          recipient: { latitude: 10, longitude: 10 },
+          status: OrderStatus.Pending,
+        },
+        {
+          id: 'order-2',
+          recipient: { latitude: 20, longitude: 20 },
+          status: OrderStatus.Pending,
+        },
+      ] as Order[];
+
+      mockOrderRepository.findByFilter.mockResolvedValue(orders);
+
+      cepValidationProvider.getAddressByZipCode.mockResolvedValue({
+        latitude: 1,
+        longitude: 1,
       });
 
       (getDistance as jest.Mock).mockImplementation(
@@ -599,25 +691,27 @@ describe('OrderValidationService', () => {
           { latitude: lat1, longitude: lng1 },
           { latitude: lat2, longitude: lng2 },
         ) => {
-          return (
-            Math.sqrt(Math.pow(lat2 - lat1, 2) + Math.pow(lng2 - lng1, 2)) *
-            1000
-          );
+          const latDiff = lat2 - lat1;
+          const lngDiff = lng2 - lng1;
+          return Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 100;
         },
       );
 
       const result = await service.findNearbyDeliveries(
-        'deliveryman-id',
-        '12345',
+        {
+          deliverymanId: 'deliveryman-id',
+          zipCode: '12345',
+        },
         mockOrderRepository,
       );
 
       expect(result).toHaveLength(2);
       expect(result[0].order.id).toBe('order-1');
       expect(result[1].order.id).toBe('order-2');
-      expect(result[0].distance).toBe('1.41 km');
-      expect(result[1].distance).toBe('2.83 km');
+      expect(result[0].distance).toBe('1.27 km');
+      expect(result[1].distance).toBe('2.69 km');
     });
+
     it('should return no nearby deliveries if all orders have missing coordinates', async () => {
       const orders = [
         {
@@ -634,55 +728,62 @@ describe('OrderValidationService', () => {
 
       mockOrderRepository.findByFilter.mockResolvedValue(orders);
 
-      (ExternalServices.getAddressByZipCode as jest.Mock).mockResolvedValue({
-        latitude: 0,
-        longitude: 0,
+      cepValidationProvider.getAddressByZipCode.mockResolvedValue({
+        latitude: 10,
+        longitude: 10,
       });
 
       await expect(
         service.findNearbyDeliveries(
-          'deliveryman-id',
-          '12345',
+          {
+            deliverymanId: 'deliveryman-id',
+            zipCode: '12345',
+          },
           mockOrderRepository,
         ),
       ).rejects.toThrow(
         new ApplicationError('No nearby deliveries found', 404),
       );
     });
+
     it('should sort nearby deliveries by distance correctly', async () => {
       const orders = [
         {
           id: 'order-1',
-          recipient: { latitude: 1, longitude: 1 },
+          recipient: { latitude: 10, longitude: 10 },
           status: OrderStatus.Pending,
         },
         {
           id: 'order-2',
-          recipient: { latitude: 3, longitude: 3 },
+          recipient: { latitude: 20, longitude: 20 },
           status: OrderStatus.Pending,
         },
       ] as Order[];
 
       mockOrderRepository.findByFilter.mockResolvedValue(orders);
-      (ExternalServices.getAddressByZipCode as jest.Mock).mockResolvedValue({
-        latitude: 0,
-        longitude: 0,
+      cepValidationProvider.getAddressByZipCode.mockResolvedValue({
+        latitude: 1,
+        longitude: 1,
       });
 
       (getDistance as jest.Mock).mockImplementation((origin, dest) => {
         const latDiff = dest.latitude - origin.latitude;
         const lngDiff = dest.longitude - origin.longitude;
-        return Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 1000;
+        return Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 100;
       });
 
       const result = await service.findNearbyDeliveries(
-        'deliveryman-id',
-        '12345',
+        {
+          deliverymanId: 'deliveryman-id',
+          zipCode: '12345',
+        },
         mockOrderRepository,
       );
 
       expect(result[0].order.id).toBe('order-1');
       expect(result[1].order.id).toBe('order-2');
+      expect(result[0].distance).toBe('1.27 km');
+      expect(result[1].distance).toBe('2.69 km');
     });
   });
 });

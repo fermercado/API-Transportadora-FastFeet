@@ -3,15 +3,18 @@ import { Order } from '../../domain/entities/Order';
 import { IOrderRepository } from '../../domain/repositories/IOrderRepository';
 import { CreateOrderDto } from '../dtos/order/CreateOrderDto';
 import { UpdateOrderDto } from '../dtos/order/UpdateOrderDto';
-import { OrderValidationService } from '../../domain/validation/OrderValidationService';
+import { TransitionOrderDto } from '../dtos/order/TransitionOrderDto';
+import { OrderValidationService } from '../../domain/validationServices/OrderValidationService';
 import { OrderStatus } from '../../domain/enums/OrderStatus';
+import { OperationOrderDto } from '../dtos/order/OperationOrderDto';
+import { FindDeliveriesForDelivererDto } from '../dtos/order/FindDeliveriesForDelivererDto';
+import { FindNearbyDeliveriesDto } from '../dtos/order/FindNearbyDeliveriesDto';
 import ImageUploadService from '../../infrastructure/service/ImageUploadService';
 import { OrderResponseDto } from '../dtos/order/ResponseOrderDto';
 import { OrderMapper } from '../mappers/OrderMapper';
 import { OrderFilter } from '../../domain/interface/OrderFilter';
 import { TrackingCodeService } from '../services/TrackingCodeService';
 import { NotificationService } from '../services/NotificationService';
-import { UserRole } from '../../domain/enums/UserRole';
 
 @injectable()
 export class OrderService {
@@ -81,16 +84,10 @@ export class OrderService {
   }
 
   public async markOrderAsWaiting(
-    orderId: string,
-    _deliverymanId: string,
-    userRole: UserRole,
+    dto: TransitionOrderDto,
   ): Promise<OrderResponseDto> {
-    const order = await this.orderValidationService.validateOrderTransition(
-      orderId,
-      OrderStatus.AwaitingPickup,
-      _deliverymanId,
-      userRole,
-    );
+    const order =
+      await this.orderValidationService.validateOrderTransition(dto);
     order.status = OrderStatus.AwaitingPickup;
     order.awaitingPickupAt = new Date();
     order.updatedAt = new Date();
@@ -99,17 +96,9 @@ export class OrderService {
     return this.orderMapper.toDto(savedOrder);
   }
 
-  public async pickupOrder(
-    orderId: string,
-    _deliverymanId: string,
-    userRole: UserRole,
-  ): Promise<OrderResponseDto> {
-    const order = await this.orderValidationService.validateOrderTransition(
-      orderId,
-      OrderStatus.PickedUp,
-      _deliverymanId,
-      userRole,
-    );
+  public async pickupOrder(dto: TransitionOrderDto): Promise<OrderResponseDto> {
+    const order =
+      await this.orderValidationService.validateOrderTransition(dto);
     order.status = OrderStatus.PickedUp;
     order.pickedUpAt = new Date();
     order.updatedAt = new Date();
@@ -119,16 +108,11 @@ export class OrderService {
   }
 
   public async markOrderAsDelivered(
-    orderId: string,
-    deliverymanId: string,
-    imageFile: Express.Multer.File,
+    dto: OperationOrderDto,
   ): Promise<OrderResponseDto> {
-    const order = await this.orderValidationService.validateOrderForDelivery(
-      orderId,
-      deliverymanId,
-      imageFile,
-    );
-    const imageUrl = await ImageUploadService.uploadImage(imageFile.path);
+    const order =
+      await this.orderValidationService.validateOrderForDelivery(dto);
+    const imageUrl = await ImageUploadService.uploadImage(dto.imageFile.path);
     order.deliveryPhoto = imageUrl;
     order.status = OrderStatus.Delivered;
     order.deliveredAt = new Date();
@@ -138,17 +122,9 @@ export class OrderService {
     return this.orderMapper.toDto(savedOrder);
   }
 
-  public async returnOrder(
-    orderId: string,
-    _deliverymanId: string,
-    userRole: UserRole,
-  ): Promise<OrderResponseDto> {
-    const order = await this.orderValidationService.validateOrderTransition(
-      orderId,
-      OrderStatus.Returned,
-      _deliverymanId,
-      userRole,
-    );
+  public async returnOrder(dto: TransitionOrderDto): Promise<OrderResponseDto> {
+    const order =
+      await this.orderValidationService.validateOrderTransition(dto);
     order.status = OrderStatus.Returned;
     order.returnedAt = new Date();
     order.updatedAt = new Date();
@@ -158,24 +134,21 @@ export class OrderService {
   }
 
   public async findDeliveriesForDeliverer(
-    deliverymanId: string,
-    status?: OrderStatus,
+    dto: FindDeliveriesForDelivererDto,
   ): Promise<OrderResponseDto[]> {
     const filter: OrderFilter = {
-      deliverymanId: deliverymanId,
-      status: status,
+      deliverymanId: dto.deliverymanId,
+      status: dto.status,
     };
     const orders = await this.orderRepository.findByFilter(filter);
     return orders.map(this.orderMapper.toDto);
   }
 
   public async findNearbyDeliveries(
-    deliverymanId: string,
-    zipCode: string,
+    dto: FindNearbyDeliveriesDto,
   ): Promise<{ order: OrderResponseDto; distance: string }[]> {
     const deliveries = await this.orderValidationService.findNearbyDeliveries(
-      deliverymanId,
-      zipCode,
+      dto,
       this.orderRepository,
     );
     return deliveries.map((delivery) => ({

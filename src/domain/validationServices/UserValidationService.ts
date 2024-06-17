@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import { IUserRepository } from '../../domain/repositories/IUserRepository';
-import { UserValidator } from '../../domain/validators/UserValidator';
+import { IUserRepository } from '../repositories/IUserRepository';
+import { UserValidator } from '../validators/UserValidator';
 import { CreateUserDto } from '../../application/dtos/user/CreateUserDto';
 import { UpdateUserDto } from '../../application/dtos/user/UpdateUserDto';
 import { UniqueValidationUtils } from '../../infrastructure/shared/utils/uniqueValidationUtils';

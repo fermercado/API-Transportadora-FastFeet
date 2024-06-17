@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { container } from 'tsyringe';
 import { OrderService } from '../../../../application/services/OrderService';
 import { IOrderRepository } from '../../../../domain/repositories/IOrderRepository';
-import { OrderValidationService } from '../../../../domain/validation/OrderValidationService';
+import { OrderValidationService } from '../../../../domain/validationServices/OrderValidationService';
 import { TrackingCodeService } from '../../../../application/services/TrackingCodeService';
 import { NotificationService } from '../../../../application/services/NotificationService';
 import { OrderMapper } from '../../../../application/mappers/OrderMapper';
@@ -519,20 +519,21 @@ describe('OrderService', () => {
         deliveryman: mockOrder.deliveryman,
       });
 
-      const result = await orderService.markOrderAsWaiting(
-        'order-id',
-        'deliveryman-id',
-        UserRole.Deliveryman,
-      );
+      const result = await orderService.markOrderAsWaiting({
+        orderId: 'order-id',
+        deliverymanId: 'deliveryman-id',
+        userRole: UserRole.Deliveryman,
+        nextStatus: OrderStatus.AwaitingPickup,
+      });
 
       expect(
         orderValidationServiceMock.validateOrderTransition,
-      ).toHaveBeenCalledWith(
-        'order-id',
-        OrderStatus.AwaitingPickup,
-        'deliveryman-id',
-        UserRole.Deliveryman,
-      );
+      ).toHaveBeenCalledWith({
+        orderId: 'order-id',
+        deliverymanId: 'deliveryman-id',
+        userRole: UserRole.Deliveryman,
+        nextStatus: OrderStatus.AwaitingPickup,
+      });
       expect(orderRepositoryMock.save).toHaveBeenCalledWith(
         expect.objectContaining({ status: OrderStatus.AwaitingPickup }),
       );
@@ -572,20 +573,21 @@ describe('OrderService', () => {
         deliveryman: mockOrder.deliveryman,
       });
 
-      const result = await orderService.pickupOrder(
-        'order-id',
-        'deliveryman-id',
-        UserRole.Deliveryman,
-      );
+      const result = await orderService.pickupOrder({
+        orderId: 'order-id',
+        deliverymanId: 'deliveryman-id',
+        userRole: UserRole.Deliveryman,
+        nextStatus: OrderStatus.PickedUp,
+      });
 
       expect(
         orderValidationServiceMock.validateOrderTransition,
-      ).toHaveBeenCalledWith(
-        'order-id',
-        OrderStatus.PickedUp,
-        'deliveryman-id',
-        UserRole.Deliveryman,
-      );
+      ).toHaveBeenCalledWith({
+        orderId: 'order-id',
+        deliverymanId: 'deliveryman-id',
+        userRole: UserRole.Deliveryman,
+        nextStatus: OrderStatus.PickedUp,
+      });
       expect(orderRepositoryMock.save).toHaveBeenCalledWith(
         expect.objectContaining({ status: OrderStatus.PickedUp }),
       );
@@ -632,15 +634,19 @@ describe('OrderService', () => {
         .spyOn(ImageUploadService, 'uploadImage')
         .mockResolvedValue('url/to/image.jpg');
 
-      const result = await orderService.markOrderAsDelivered(
-        'order-id',
-        'deliveryman-id',
+      const result = await orderService.markOrderAsDelivered({
+        orderId: 'order-id',
+        deliverymanId: 'deliveryman-id',
         imageFile,
-      );
+      });
 
       expect(
         orderValidationServiceMock.validateOrderForDelivery,
-      ).toHaveBeenCalledWith('order-id', 'deliveryman-id', imageFile);
+      ).toHaveBeenCalledWith({
+        orderId: 'order-id',
+        deliverymanId: 'deliveryman-id',
+        imageFile,
+      });
       expect(orderRepositoryMock.save).toHaveBeenCalledWith(
         expect.objectContaining({
           status: OrderStatus.Delivered,
@@ -684,20 +690,21 @@ describe('OrderService', () => {
         deliveryman: mockOrder.deliveryman,
       });
 
-      const result = await orderService.returnOrder(
-        'order-id',
-        'deliveryman-id',
-        UserRole.Deliveryman,
-      );
+      const result = await orderService.returnOrder({
+        orderId: 'order-id',
+        deliverymanId: 'deliveryman-id',
+        userRole: UserRole.Deliveryman,
+        nextStatus: OrderStatus.Returned,
+      });
 
       expect(
         orderValidationServiceMock.validateOrderTransition,
-      ).toHaveBeenCalledWith(
-        'order-id',
-        OrderStatus.Returned,
-        'deliveryman-id',
-        UserRole.Deliveryman,
-      );
+      ).toHaveBeenCalledWith({
+        orderId: 'order-id',
+        deliverymanId: 'deliveryman-id',
+        userRole: UserRole.Deliveryman,
+        nextStatus: OrderStatus.Returned,
+      });
       expect(orderRepositoryMock.save).toHaveBeenCalledWith(
         expect.objectContaining({ status: OrderStatus.Returned }),
       );
@@ -729,8 +736,9 @@ describe('OrderService', () => {
         deliveryman: mockOrder.deliveryman,
       });
 
-      const result =
-        await orderService.findDeliveriesForDeliverer('deliveryman-id');
+      const result = await orderService.findDeliveriesForDeliverer({
+        deliverymanId: 'deliveryman-id',
+      });
 
       expect(orderRepositoryMock.findByFilter).toHaveBeenCalledWith({
         deliverymanId: 'deliveryman-id',
@@ -765,14 +773,20 @@ describe('OrderService', () => {
         deliveryman: mockOrder.deliveryman,
       });
 
-      const result = await orderService.findNearbyDeliveries(
-        'deliveryman-id',
-        '12345',
-      );
+      const result = await orderService.findNearbyDeliveries({
+        deliverymanId: 'deliveryman-id',
+        zipCode: '12345',
+      });
 
       expect(
         orderValidationServiceMock.findNearbyDeliveries,
-      ).toHaveBeenCalledWith('deliveryman-id', '12345', orderRepositoryMock);
+      ).toHaveBeenCalledWith(
+        {
+          deliverymanId: 'deliveryman-id',
+          zipCode: '12345',
+        },
+        orderRepositoryMock,
+      );
       expect(orderMapperMock.toDto).toHaveBeenCalledWith(mockOrder);
       expect(result).toEqual([
         {
