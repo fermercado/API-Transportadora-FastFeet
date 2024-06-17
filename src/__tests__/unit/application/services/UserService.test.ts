@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { UserService } from '../../../../application/services/UserService';
 import { IUserRepository } from '../../../../domain/repositories/IUserRepository';
-import { UserValidationService } from '../../../../domain/validation/UserValidationService';
+import { UserValidationService } from '../../../../domain/validationServices/UserValidationService';
 import { UserMapper } from '../../../../application/mappers/UserMappers';
 import { PasswordHasher } from '../../../../infrastructure/shared/utils/PasswordHasher';
 import { CreateUserDto } from '../../../../application/dtos/user/CreateUserDto';
@@ -11,6 +11,7 @@ import { UserRole } from '../../../../domain/enums/UserRole';
 import { ApplicationError } from '../../../../infrastructure/shared/errors/ApplicationError';
 import { UpdateUserDto } from '../../../../application/dtos/user/UpdateUserDto';
 import bcrypt from 'bcryptjs';
+import { DeleteUserDto } from '../../../../application/dtos/user/DeleteUserDto';
 
 describe('UserService', () => {
   let userService: UserService;
@@ -95,6 +96,7 @@ describe('UserService', () => {
       expect(mockUserMapper.toResponseUserDto).toHaveBeenCalledWith(savedUser);
       expect(result).toEqual(responseUserDto);
     });
+
     it('should throw an error when password encryption fails', async () => {
       const createUserDto: CreateUserDto = {
         firstName: 'João',
@@ -118,27 +120,7 @@ describe('UserService', () => {
 
       expect(mockUserRepository.create).not.toHaveBeenCalled();
     });
-    it('should throw an error when password encryption fails', async () => {
-      const createUserDto: CreateUserDto = {
-        firstName: 'João',
-        lastName: 'Silva',
-        cpf: '123.456.789-09',
-        email: 'joao@example.com',
-        password: 'Password123!',
-        confirmPassword: 'Password123!',
-        role: UserRole.Admin,
-      };
 
-      const encryptionError = new Error('Error during password encryption');
-
-      mockPasswordHasher.hash.mockRejectedValue(encryptionError);
-
-      await expect(userService.createUser(createUserDto)).rejects.toThrow(
-        Error,
-      );
-
-      expect(mockUserRepository.create).not.toHaveBeenCalled();
-    });
     it('should throw an error when the CPF or email is already registered', async () => {
       const createUserDto: CreateUserDto = {
         firstName: 'Maria',
@@ -164,6 +146,7 @@ describe('UserService', () => {
 
       expect(mockUserRepository.create).not.toHaveBeenCalled();
     });
+
     it('should throw an error if password and confirm password do not match', async () => {
       const createUserDto: CreateUserDto = {
         firstName: 'Alice',
@@ -189,56 +172,7 @@ describe('UserService', () => {
 
       expect(mockUserRepository.create).not.toHaveBeenCalled();
     });
-    it('should throw an error when the email is already registered', async () => {
-      const createUserDto: CreateUserDto = {
-        firstName: 'Bob',
-        lastName: 'Builder',
-        cpf: '987.654.321-98',
-        email: 'bob@example.com',
-        password: 'Builder123!',
-        confirmPassword: 'Builder123!',
-        role: UserRole.Admin,
-      };
 
-      const emailExistsError = new ApplicationError(
-        'Email already exists',
-        409,
-      );
-      mockUserValidationService.validateCreateData.mockRejectedValue(
-        emailExistsError,
-      );
-
-      await expect(userService.createUser(createUserDto)).rejects.toThrow(
-        ApplicationError,
-      );
-
-      expect(mockUserRepository.create).not.toHaveBeenCalled();
-    });
-    it('should throw an error if required fields are missing', async () => {
-      const incompleteUserDto: CreateUserDto = {
-        firstName: 'João',
-        lastName: '',
-        cpf: '',
-        email: '',
-        password: 'Password123!',
-        confirmPassword: 'Password123!',
-        role: UserRole.Admin,
-      };
-
-      const missingFieldsError = new ApplicationError(
-        'Required fields are missing',
-        400,
-      );
-      mockUserValidationService.validateCreateData.mockRejectedValue(
-        missingFieldsError,
-      );
-
-      await expect(
-        userService.createUser(incompleteUserDto as any),
-      ).rejects.toThrow(ApplicationError);
-
-      expect(mockUserRepository.create).not.toHaveBeenCalled();
-    });
     it('should handle exceptions thrown by the repository', async () => {
       const createUserDto: CreateUserDto = {
         firstName: 'João',
@@ -259,6 +193,7 @@ describe('UserService', () => {
 
       expect(mockUserRepository.create).toHaveBeenCalled();
     });
+
     it('should throw an error if CPF format is invalid', async () => {
       const createUserDto: CreateUserDto = {
         firstName: 'João',
@@ -281,6 +216,7 @@ describe('UserService', () => {
 
       expect(mockUserRepository.create).not.toHaveBeenCalled();
     });
+
     it('should handle edge case values for data fields', async () => {
       const edgeCaseUserDto: CreateUserDto = {
         firstName: 'J'.repeat(51),
@@ -307,6 +243,7 @@ describe('UserService', () => {
       expect(mockUserRepository.create).not.toHaveBeenCalled();
     });
   });
+
   describe('updateUser', () => {
     it('should update a user successfully and return a DTO', async () => {
       const updateUserDto: UpdateUserDto = {
@@ -377,6 +314,7 @@ describe('UserService', () => {
 
       expect(mockUserRepository.update).not.toHaveBeenCalled();
     });
+
     it('should throw an error if no user is found with the provided ID', async () => {
       const updateUserDto: UpdateUserDto = { firstName: 'Alice' };
 
@@ -405,105 +343,117 @@ describe('UserService', () => {
 
       expect(mockUserRepository.update).not.toHaveBeenCalled();
     });
+
+    it('should update a user without changing the password if no new password is provided', async () => {
+      const updateUserDto: UpdateUserDto = {
+        firstName: 'Alice',
+        lastName: 'Johnson',
+      };
+
+      const user: User = {
+        id: '1',
+        cpf: '123.456.789-09',
+        password: 'oldPassword',
+        role: UserRole.Admin,
+        firstName: 'Alice',
+        lastName: 'Johnson',
+        email: 'alice@example.com',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const updatedUser: User = {
+        ...user,
+        firstName: 'Alice',
+        lastName: 'Johnson',
+      };
+
+      mockUserRepository.update.mockResolvedValue(updatedUser);
+      mockUserMapper.toResponseUserDto.mockReturnValue(
+        updatedUser as ResponseUserDto,
+      );
+      mockUserValidationService.validateUpdateData.mockResolvedValue(undefined);
+      mockUserValidationService.validateUserExistence.mockResolvedValue(user);
+
+      const result = await userService.updateUser('1', updateUserDto);
+
+      expect(mockPasswordHasher.hash).not.toHaveBeenCalled();
+      expect(mockUserRepository.update).toHaveBeenCalledWith(
+        '1',
+        updateUserDto,
+      );
+      expect(result).toEqual(updatedUser as ResponseUserDto);
+    });
+
+    it('should throw an error if the updated email or CPF is already in use', async () => {
+      const updateUserDto: UpdateUserDto = {
+        email: 'existing@example.com',
+      };
+      const uniquenessError = new ApplicationError(
+        'Email or CPF already in use',
+        409,
+      );
+      mockUserValidationService.validateUpdateData.mockRejectedValue(
+        uniquenessError,
+      );
+
+      await expect(userService.updateUser('1', updateUserDto)).rejects.toThrow(
+        ApplicationError,
+      );
+
+      expect(mockUserRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('should throw an error if the email or CPF format is invalid', async () => {
+      const updateUserDto: UpdateUserDto = {
+        email: 'invalid-email-format',
+        cpf: '12345678900',
+      };
+      const formatError = new ApplicationError(
+        'Invalid email or CPF format',
+        400,
+      );
+      mockUserValidationService.validateUpdateData.mockRejectedValue(
+        formatError,
+      );
+
+      await expect(userService.updateUser('1', updateUserDto)).rejects.toThrow(
+        ApplicationError,
+      );
+
+      expect(mockUserRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('should throw an error if user tries to change role without permission', async () => {
+      const updateUserDto: UpdateUserDto = {
+        role: UserRole.Deliveryman,
+      };
+      const roleChangeError = new ApplicationError(
+        'Unauthorized role change',
+        403,
+      );
+      mockUserValidationService.validateUpdateData.mockRejectedValue(
+        roleChangeError,
+      );
+
+      await expect(userService.updateUser('1', updateUserDto)).rejects.toThrow(
+        ApplicationError,
+      );
+
+      expect(mockUserRepository.update).not.toHaveBeenCalled();
+    });
   });
-  it('should update a user without changing the password if no new password is provided', async () => {
-    const updateUserDto: UpdateUserDto = {
-      firstName: 'Alice',
-      lastName: 'Johnson',
-    };
 
-    const user: User = {
-      id: '1',
-      cpf: '123.456.789-09',
-      password: 'oldPassword',
-      role: UserRole.Admin,
-      firstName: 'Alice',
-      lastName: 'Johnson',
-      email: 'alice@example.com',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    const updatedUser: User = {
-      ...user,
-      firstName: 'Alice',
-      lastName: 'Johnson',
-    };
-
-    mockUserRepository.update.mockResolvedValue(updatedUser);
-    mockUserMapper.toResponseUserDto.mockReturnValue(
-      updatedUser as ResponseUserDto,
-    );
-    mockUserValidationService.validateUpdateData.mockResolvedValue(undefined);
-    mockUserValidationService.validateUserExistence.mockResolvedValue(user);
-
-    const result = await userService.updateUser('1', updateUserDto);
-
-    expect(mockPasswordHasher.hash).not.toHaveBeenCalled();
-    expect(mockUserRepository.update).toHaveBeenCalledWith('1', updateUserDto);
-    expect(result).toEqual(updatedUser as ResponseUserDto);
-  });
-
-  it('should throw an error if the updated email or CPF is already in use', async () => {
-    const updateUserDto: UpdateUserDto = {
-      email: 'existing@example.com',
-    };
-    const uniquenessError = new ApplicationError(
-      'Email or CPF already in use',
-      409,
-    );
-    mockUserValidationService.validateUpdateData.mockRejectedValue(
-      uniquenessError,
-    );
-
-    await expect(userService.updateUser('1', updateUserDto)).rejects.toThrow(
-      ApplicationError,
-    );
-
-    expect(mockUserRepository.update).not.toHaveBeenCalled();
-  });
-  it('should throw an error if the email or CPF format is invalid', async () => {
-    const updateUserDto: UpdateUserDto = {
-      email: 'invalid-email-format',
-      cpf: '12345678900',
-    };
-    const formatError = new ApplicationError(
-      'Invalid email or CPF format',
-      400,
-    );
-    mockUserValidationService.validateUpdateData.mockRejectedValue(formatError);
-
-    await expect(userService.updateUser('1', updateUserDto)).rejects.toThrow(
-      ApplicationError,
-    );
-
-    expect(mockUserRepository.update).not.toHaveBeenCalled();
-  });
-  it('should throw an error if user tries to change role without permission', async () => {
-    const updateUserDto: UpdateUserDto = {
-      role: UserRole.Deliveryman,
-    };
-    const roleChangeError = new ApplicationError(
-      'Unauthorized role change',
-      403,
-    );
-    mockUserValidationService.validateUpdateData.mockRejectedValue(
-      roleChangeError,
-    );
-
-    await expect(userService.updateUser('1', updateUserDto)).rejects.toThrow(
-      ApplicationError,
-    );
-
-    expect(mockUserRepository.update).not.toHaveBeenCalled();
-  });
   describe('deleteUser', () => {
     it('should delete a user successfully', async () => {
-      const userIdToDelete = '2';
-      const loggedInUserId = '1';
+      const deleteUserDto: DeleteUserDto = {
+        id: '2',
+        loggedInUserId: '1',
+        providedDeleteKey: 'delete-key',
+      };
 
       mockUserValidationService.validateUserExistence.mockResolvedValue({
-        id: userIdToDelete,
+        id: deleteUserDto.id,
         isDefaultAdmin: false,
       } as User);
       mockUserValidationService.validateDeleteSelfOperation.mockResolvedValue(
@@ -514,30 +464,29 @@ describe('UserService', () => {
       );
       mockUserRepository.remove.mockResolvedValue(undefined);
 
-      await userService.deleteUser(
-        userIdToDelete,
-        loggedInUserId,
-        'delete-key',
-      );
+      await userService.deleteUser(deleteUserDto);
 
       expect(
         mockUserValidationService.validateUserExistence,
-      ).toHaveBeenCalledWith(userIdToDelete);
+      ).toHaveBeenCalledWith(deleteUserDto.id);
       expect(
         mockUserValidationService.validateDeleteSelfOperation,
-      ).toHaveBeenCalledWith(userIdToDelete, loggedInUserId);
+      ).toHaveBeenCalledWith(deleteUserDto.id, deleteUserDto.loggedInUserId);
       expect(
         mockUserValidationService.validateDeleteKeyForDefaultAdmin,
       ).toHaveBeenCalledWith(
-        { id: userIdToDelete, isDefaultAdmin: false },
-        'delete-key',
+        { id: deleteUserDto.id, isDefaultAdmin: false },
+        deleteUserDto.providedDeleteKey,
       );
-      expect(mockUserRepository.remove).toHaveBeenCalledWith(userIdToDelete);
+      expect(mockUserRepository.remove).toHaveBeenCalledWith(deleteUserDto.id);
     });
 
     it('should throw an error if a user tries to delete their own account', async () => {
-      const userIdToDelete = '1';
-      const loggedInUserId = '1';
+      const deleteUserDto: DeleteUserDto = {
+        id: '1',
+        loggedInUserId: '1',
+        providedDeleteKey: 'delete-key',
+      };
 
       const forbiddenError = new ApplicationError(
         'Forbidden operation',
@@ -549,64 +498,76 @@ describe('UserService', () => {
         forbiddenError,
       );
 
-      await expect(
-        userService.deleteUser(userIdToDelete, loggedInUserId, 'delete-key'),
-      ).rejects.toThrow(ApplicationError);
+      await expect(userService.deleteUser(deleteUserDto)).rejects.toThrow(
+        ApplicationError,
+      );
 
       expect(mockUserRepository.remove).not.toHaveBeenCalled();
     });
 
     it('should throw an error if the user does not exist', async () => {
-      const userIdToDelete = '3';
-      const loggedInUserId = '1';
+      const deleteUserDto: DeleteUserDto = {
+        id: '3',
+        loggedInUserId: '1',
+        providedDeleteKey: 'delete-key',
+      };
       const notFoundError = new ApplicationError('User not found', 404);
       mockUserValidationService.validateUserExistence.mockRejectedValue(
         notFoundError,
       );
 
-      await expect(
-        userService.deleteUser(userIdToDelete, loggedInUserId, 'delete-key'),
-      ).rejects.toThrow(ApplicationError);
+      await expect(userService.deleteUser(deleteUserDto)).rejects.toThrow(
+        ApplicationError,
+      );
 
       expect(mockUserRepository.remove).not.toHaveBeenCalled();
     });
 
     it('should throw an error if the user ID to delete is invalid', async () => {
-      const userIdToDelete = 'invalid-id';
-      const loggedInUserId = '1';
+      const deleteUserDto: DeleteUserDto = {
+        id: 'invalid-id',
+        loggedInUserId: '1',
+        providedDeleteKey: 'delete-key',
+      };
       const invalidIdError = new ApplicationError('Invalid user ID', 400);
       mockUserValidationService.validateUserExistence.mockRejectedValue(
         invalidIdError,
       );
 
-      await expect(
-        userService.deleteUser(userIdToDelete, loggedInUserId, 'delete-key'),
-      ).rejects.toThrow(ApplicationError);
+      await expect(userService.deleteUser(deleteUserDto)).rejects.toThrow(
+        ApplicationError,
+      );
 
       expect(mockUserRepository.remove).not.toHaveBeenCalled();
     });
 
     it('should throw an error if the user has active dependencies', async () => {
-      const userIdToDelete = '2';
-      const loggedInUserId = '1';
+      const deleteUserDto: DeleteUserDto = {
+        id: '2',
+        loggedInUserId: '1',
+        providedDeleteKey: 'delete-key',
+      };
       const dependencyError = new ApplicationError(
         'User has active dependencies',
         403,
       );
       mockUserRepository.remove.mockRejectedValue(dependencyError);
 
-      await expect(
-        userService.deleteUser(userIdToDelete, loggedInUserId, 'delete-key'),
-      ).rejects.toThrow(ApplicationError);
+      await expect(userService.deleteUser(deleteUserDto)).rejects.toThrow(
+        ApplicationError,
+      );
 
-      expect(mockUserRepository.remove).toHaveBeenCalledWith(userIdToDelete);
+      expect(mockUserRepository.remove).toHaveBeenCalledWith(deleteUserDto.id);
     });
 
     it('should handle concurrent delete attempts gracefully', async () => {
-      const userIdToDelete = '2';
-      const loggedInUserId = '1';
+      const deleteUserDto: DeleteUserDto = {
+        id: '2',
+        loggedInUserId: '1',
+        providedDeleteKey: 'delete-key',
+      };
       mockUserValidationService.validateUserExistence.mockResolvedValue({
-        id: userIdToDelete,
+        id: deleteUserDto.id,
         isDefaultAdmin: false,
       } as User);
       mockUserValidationService.validateDeleteSelfOperation.mockResolvedValue(
@@ -623,17 +584,18 @@ describe('UserService', () => {
         .mockRejectedValueOnce(concurrentError)
         .mockResolvedValueOnce(undefined);
 
-      await expect(
-        userService.deleteUser(userIdToDelete, loggedInUserId, 'delete-key'),
-      ).rejects.toThrow(ApplicationError);
+      await expect(userService.deleteUser(deleteUserDto)).rejects.toThrow(
+        ApplicationError,
+      );
 
       await expect(
-        userService.deleteUser(userIdToDelete, loggedInUserId, 'delete-key'),
+        userService.deleteUser(deleteUserDto),
       ).resolves.toBeUndefined();
 
       expect(mockUserRepository.remove).toHaveBeenCalledTimes(2);
     });
   });
+
   describe('findUserById', () => {
     it('should return a ResponseUserDto when a user is found', async () => {
       const user: User = {
@@ -686,6 +648,7 @@ describe('UserService', () => {
       expect(mockUserRepository.findById).not.toHaveBeenCalled();
     });
   });
+
   describe('listUsers', () => {
     it('should return all users when no role is specified', async () => {
       const users: User[] = [
@@ -773,6 +736,7 @@ describe('UserService', () => {
       expect(result).toEqual([]);
     });
   });
+
   describe('validateUser', () => {
     it('should return a ResponseUserDto when credentials are valid', async () => {
       const user: User = {
