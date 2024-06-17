@@ -4,26 +4,14 @@ import { OrderService } from '../../application/services/OrderService';
 import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 import { OrderStatusValidator } from '../../infrastructure/shared/utils/validateOrderStatus';
 import { OrderStatus } from '../../domain/enums/OrderStatus';
+import { TransitionOrderDto } from '../../application/dtos/order/TransitionOrderDto';
+import { OperationOrderDto } from '../../application/dtos/order/OperationOrderDto';
+import { FindDeliveriesForDelivererDto } from '../../application/dtos/order/FindDeliveriesForDelivererDto';
+import { FindNearbyDeliveriesDto } from '../../application/dtos/order/FindNearbyDeliveriesDto';
 
 @injectable()
 export class OrderController {
   constructor(@inject('OrderService') private orderService: OrderService) {}
-
-  public handleError(
-    error: any,
-    defaultMessage: string,
-    next: NextFunction,
-  ): void {
-    if (error instanceof ApplicationError) {
-      next(error);
-    } else {
-      const errorMessage = error.message || 'Unknown error';
-      const applicationError = new ApplicationError(defaultMessage, 500, true, [
-        { key: 'internal', value: errorMessage },
-      ]);
-      next(applicationError);
-    }
-  }
 
   async createOrder(
     req: Request,
@@ -34,8 +22,13 @@ export class OrderController {
       const orderDto = await this.orderService.createOrder(req.body);
       res.status(201).json(orderDto);
     } catch (error: any) {
-      console.error('Error caught in createOrder:', error);
-      this.handleError(error, 'Failed to create order', next);
+      next(
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to create order', 500, true, [
+              { key: 'internal', value: error.message },
+            ]),
+      );
     }
   }
 
@@ -51,7 +44,13 @@ export class OrderController {
       );
       res.status(200).json(orderDto);
     } catch (error: any) {
-      this.handleError(error, 'Failed to update order', next);
+      next(
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to update order', 500, true, [
+              { key: 'internal', value: error.message },
+            ]),
+      );
     }
   }
 
@@ -64,7 +63,13 @@ export class OrderController {
       await this.orderService.deleteOrder(req.params.id);
       res.status(204).send();
     } catch (error: any) {
-      this.handleError(error, 'Failed to delete order', next);
+      next(
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to delete order', 500, true, [
+              { key: 'internal', value: error.message },
+            ]),
+      );
     }
   }
 
@@ -80,7 +85,13 @@ export class OrderController {
       }
       res.status(200).json(orderDto);
     } catch (error: any) {
-      this.handleError(error, 'Failed to retrieve order', next);
+      next(
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to retrieve order', 500, true, [
+              { key: 'internal', value: error.message },
+            ]),
+      );
     }
   }
 
@@ -94,7 +105,13 @@ export class OrderController {
       const ordersDto = await this.orderService.listOrders(status);
       res.status(200).json(ordersDto);
     } catch (error: any) {
-      this.handleError(error, 'Failed to list orders', next);
+      next(
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to list orders', 500, true, [
+              { key: 'internal', value: error.message },
+            ]),
+      );
     }
   }
 
@@ -104,14 +121,22 @@ export class OrderController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const orderDto = await this.orderService.markOrderAsWaiting(
-        req.params.id,
-        req.user.id,
-        req.user.role,
-      );
+      const dto: TransitionOrderDto = {
+        orderId: req.params.id,
+        deliverymanId: req.user.id,
+        userRole: req.user.role,
+        nextStatus: OrderStatus.AwaitingPickup,
+      };
+      const orderDto = await this.orderService.markOrderAsWaiting(dto);
       res.status(200).json(orderDto);
     } catch (error: any) {
-      this.handleError(error, 'Failed to mark order as waiting', next);
+      next(
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to mark order as waiting', 500, true, [
+              { key: 'internal', value: error.message },
+            ]),
+      );
     }
   }
 
@@ -121,14 +146,22 @@ export class OrderController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const orderDto = await this.orderService.pickupOrder(
-        req.params.id,
-        req.user.id,
-        req.user.role,
-      );
+      const dto: TransitionOrderDto = {
+        orderId: req.params.id,
+        deliverymanId: req.user.id,
+        userRole: req.user.role,
+        nextStatus: OrderStatus.PickedUp,
+      };
+      const orderDto = await this.orderService.pickupOrder(dto);
       res.status(200).json(orderDto);
     } catch (error: any) {
-      this.handleError(error, 'Failed to pickup order', next);
+      next(
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to pickup order', 500, true, [
+              { key: 'internal', value: error.message },
+            ]),
+      );
     }
   }
 
@@ -145,14 +178,24 @@ export class OrderController {
           true,
         );
       }
-      const orderDto = await this.orderService.markOrderAsDelivered(
-        req.params.id,
-        req.user.id,
-        req.file,
-      );
+      const dto: OperationOrderDto = {
+        orderId: req.params.id,
+        deliverymanId: req.user.id,
+        imageFile: req.file,
+      };
+      const orderDto = await this.orderService.markOrderAsDelivered(dto);
       res.status(200).json(orderDto);
     } catch (error: any) {
-      this.handleError(error, 'Failed to mark order as delivered', next);
+      next(
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError(
+              'Failed to mark order as delivered',
+              500,
+              true,
+              [{ key: 'internal', value: error.message }],
+            ),
+      );
     }
   }
 
@@ -162,14 +205,22 @@ export class OrderController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const orderDto = await this.orderService.returnOrder(
-        req.params.id,
-        req.user.id,
-        req.user.role,
-      );
+      const dto: TransitionOrderDto = {
+        orderId: req.params.id,
+        deliverymanId: req.user.id,
+        userRole: req.user.role,
+        nextStatus: OrderStatus.Returned,
+      };
+      const orderDto = await this.orderService.returnOrder(dto);
       res.status(200).json(orderDto);
     } catch (error: any) {
-      this.handleError(error, 'Failed to return order', next);
+      next(
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to return order', 500, true, [
+              { key: 'internal', value: error.message },
+            ]),
+      );
     }
   }
 
@@ -179,15 +230,20 @@ export class OrderController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const deliverymanId = req.params.deliverymanId;
-      const status = req.query.status as OrderStatus | undefined;
-      const ordersDto = await this.orderService.findDeliveriesForDeliverer(
-        deliverymanId,
-        status,
-      );
+      const dto: FindDeliveriesForDelivererDto = {
+        deliverymanId: req.params.deliverymanId,
+        status: req.query.status as OrderStatus | undefined,
+      };
+      const ordersDto = await this.orderService.findDeliveriesForDeliverer(dto);
       res.status(200).json(ordersDto);
     } catch (error: any) {
-      this.handleError(error, 'Failed to list deliveries', next);
+      next(
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to list deliveries', 500, true, [
+              { key: 'internal', value: error.message },
+            ]),
+      );
     }
   }
 
@@ -197,15 +253,20 @@ export class OrderController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const deliverymanId = req.user.id;
-      const status = req.query.status as OrderStatus | undefined;
-      const ordersDto = await this.orderService.findDeliveriesForDeliverer(
-        deliverymanId,
-        status,
-      );
+      const dto: FindDeliveriesForDelivererDto = {
+        deliverymanId: req.user.id,
+        status: req.query.status as OrderStatus | undefined,
+      };
+      const ordersDto = await this.orderService.findDeliveriesForDeliverer(dto);
       res.status(200).json(ordersDto);
     } catch (error: any) {
-      this.handleError(error, 'Failed to list own deliveries', next);
+      next(
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to list own deliveries', 500, true, [
+              { key: 'internal', value: error.message },
+            ]),
+      );
     }
   }
 
@@ -215,13 +276,23 @@ export class OrderController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const deliveries = await this.orderService.findNearbyDeliveries(
-        req.user.id,
-        req.body.zipCode,
-      );
+      const dto: FindNearbyDeliveriesDto = {
+        deliverymanId: req.user.id,
+        zipCode: req.body.zipCode,
+      };
+      const deliveries = await this.orderService.findNearbyDeliveries(dto);
       res.status(200).json(deliveries);
     } catch (error: any) {
-      this.handleError(error, 'Failed to find nearby deliveries', next);
+      next(
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError(
+              'Failed to find nearby deliveries',
+              500,
+              true,
+              [{ key: 'internal', value: error.message }],
+            ),
+      );
     }
   }
 }
