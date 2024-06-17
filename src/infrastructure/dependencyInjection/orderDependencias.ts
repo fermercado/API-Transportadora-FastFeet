@@ -2,7 +2,7 @@ import { container } from 'tsyringe';
 import { IOrderRepository } from '../../domain/repositories/IOrderRepository';
 import { OrderRepository } from '../orm/repositories/OrderRepository';
 import { OrderService } from '../../application/services/OrderService';
-import { OrderValidationService } from '../../domain/validation/OrderValidationService';
+import { OrderValidationService } from '../../domain/validationServices/OrderValidationService';
 import { OrderMapper } from '../../application/mappers/OrderMapper';
 
 container.registerSingleton<IOrderRepository>(
