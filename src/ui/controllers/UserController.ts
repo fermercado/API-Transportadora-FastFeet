@@ -1,6 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
 import { UserService } from '../../application/services/UserService';
+import { DeleteUserDto } from '../../application/dtos/user/DeleteUserDto';
 import { ApplicationError } from '../../infrastructure/shared/errors/ApplicationError';
 
 @injectable()
@@ -51,15 +52,12 @@ export class UserController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const userIdToDelete = req.params.id;
-      const loggedInUserId = req.user.id;
-      const { deleteKey } = req.body;
-
-      await this.userService.deleteUser(
-        userIdToDelete,
-        loggedInUserId,
-        deleteKey,
-      );
+      const deleteUserDto: DeleteUserDto = {
+        id: req.params.id,
+        loggedInUserId: req.user.id,
+        providedDeleteKey: req.body.deleteKey,
+      };
+      await this.userService.deleteUser(deleteUserDto);
       res.status(204).send();
     } catch (error) {
       next(
