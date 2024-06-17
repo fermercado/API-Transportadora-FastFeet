@@ -5,10 +5,10 @@ import AppDataSource from '../../infrastructure/orm/ormconfig';
 import { AuthService } from '../../application/services/AuthService';
 import { UserService } from '../../application/services/UserService';
 import { DeliveryNotificationService } from '../../application/services/DeliveryNotificationService';
-import { ExternalServices } from '../../infrastructure/externalService/ExternalService';
+import { CepValidationProvider } from '../../infrastructure/providers/CepValidationProvider';
 import { UniqueValidationUtils } from '../../infrastructure/shared/utils/uniqueValidationUtils';
 import { PasswordHasher } from '../../infrastructure/shared/utils/PasswordHasher';
-import { UserValidationService } from '../../domain/validation/UserValidationService';
+import { UserValidationService } from '../../domain/validationServices/UserValidationService';
 import { UserMapper } from '../../application/mappers/UserMappers';
 
 const jwtSecret = process.env.JWT_SECRET || 'default_secret';
@@ -21,7 +21,10 @@ container.registerSingleton(
   'DeliveryNotificationService',
   DeliveryNotificationService,
 );
-container.registerSingleton('ExternalServices', ExternalServices);
+container.registerSingleton<CepValidationProvider>(
+  'CepValidationProvider',
+  CepValidationProvider,
+);
 container.registerSingleton('UniqueValidationUtils', UniqueValidationUtils);
 container.registerSingleton('PasswordHasher', PasswordHasher);
 container.registerSingleton('UserValidationService', UserValidationService);
