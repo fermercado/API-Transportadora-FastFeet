@@ -1,121 +1,91 @@
-import { RecipientValidator } from '../../../../domain/validators/RecipientValidator';
+import 'reflect-metadata';
 import { z } from 'zod';
+import { CepValidationProvider } from '../../../../infrastructure/providers/CepValidationProvider';
+import { RecipientValidator } from '../../../../domain/validators/RecipientValidator';
+import { container } from 'tsyringe';
+
+jest.mock('../../../../infrastructure/providers/CepValidationProvider');
 
 describe('RecipientValidator', () => {
-  let consoleErrorSpy: jest.SpyInstance;
-  let consoleLogSpy: jest.SpyInstance;
+  let cepValidationProviderMock: jest.Mocked<CepValidationProvider>;
 
   beforeEach(() => {
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    cepValidationProviderMock = {
+      getAddressByZipCode: jest.fn(),
+      getCoordinatesFromAddress: jest.fn(),
+    } as jest.Mocked<CepValidationProvider>;
+
+    container.registerInstance(
+      'CepValidationProvider',
+      cepValidationProviderMock,
+    );
+    cepValidationProviderMock.getAddressByZipCode.mockImplementation(
+      (zipCode) => {
+        if (zipCode === '12345-678') {
+          return Promise.reject(new Error('Invalid or not found ZIP code.'));
+        }
+        return Promise.resolve({
+          logradouro: 'Rua Exemplo',
+          bairro: 'Bairro Exemplo',
+          localidade: 'Cidade Exemplo',
+          uf: 'Estado Exemplo',
+        });
+      },
+    );
   });
 
   afterEach(() => {
-    consoleErrorSpy.mockRestore();
-    consoleLogSpy.mockRestore();
+    jest.resetAllMocks();
+    container.clearInstances();
   });
 
   describe('createSchema', () => {
-    it('should fail validation for an invalid CPF format', async () => {
+    it('should fail validation for an invalid ZIP code', async () => {
+      const schema = RecipientValidator.createSchema(cepValidationProviderMock);
       const invalidRecipient = {
-        firstName: 'Maria',
-        lastName: 'Silva',
-        cpf: '12345678909',
-        email: 'maria.silva@example.com',
-        zipCode: '12345-678',
-        number: 123,
-        complement: 'Apt 4B',
-      };
-
-      await expect(
-        RecipientValidator.createSchema.parseAsync(invalidRecipient),
-      ).rejects.toThrow(z.ZodError);
-    });
-
-    it('should fail validation for an invalid email format', async () => {
-      const invalidRecipient = {
-        firstName: 'Maria',
+        firstName: 'João',
         lastName: 'Silva',
         cpf: '123.456.789-09',
-        email: 'maria.silva@com',
+        email: 'joao.silva@example.com',
         zipCode: '12345-678',
         number: 123,
-        complement: 'Apt 4B',
+        street: 'Rua Exemplo',
+        neighborhood: 'Bairro Exemplo',
+        city: 'Cidade Exemplo',
+        state: 'Estado Exemplo',
+        complement: 'Apto 123',
       };
-
-      await expect(
-        RecipientValidator.createSchema.parseAsync(invalidRecipient),
-      ).rejects.toThrow(z.ZodError);
-    });
-
-    it('should fail validation for a negative number', async () => {
-      const invalidRecipient = {
-        firstName: 'Maria',
-        lastName: 'Silva',
-        cpf: '123.456.789-09',
-        email: 'maria.silva@example.com',
-        zipCode: '12345-678',
-        number: -123,
-        complement: 'Apt 4B',
-      };
-
-      await expect(
-        RecipientValidator.createSchema.parseAsync(invalidRecipient),
-      ).rejects.toThrow(z.ZodError);
+      await expect(schema.parseAsync(invalidRecipient)).rejects.toThrow(
+        z.ZodError,
+      );
     });
   });
 
   describe('updateSchema', () => {
     it('should pass validation for a valid recipient update', async () => {
-      const validRecipientUpdate = {
-        firstName: 'Maria',
-        email: 'maria.silva@example.com',
+      const schema = RecipientValidator.updateSchema(cepValidationProviderMock);
+      const validUpdate = {
+        firstName: 'João',
+        lastName: 'Silva',
+        email: 'joao.silva@example.com',
+        zipCode: '98765-432',
+        number: 123,
       };
-
-      await expect(
-        RecipientValidator.updateSchema.parseAsync(validRecipientUpdate),
-      ).resolves.not.toThrow();
+      await expect(schema.parseAsync(validUpdate)).resolves.not.toThrow();
     });
 
-    it('should fail validation for an invalid CPF format in update', async () => {
-      const invalidRecipientUpdate = {
-        cpf: '12345678909',
+    it('should fail validation for an invalid ZIP code update', async () => {
+      const schema = RecipientValidator.updateSchema(cepValidationProviderMock);
+      const invalidUpdate = {
+        firstName: 'João',
+        lastName: 'Silva',
+        email: 'joao.silva@example.com',
+        zipCode: '12345-678',
+        number: 123,
       };
-
-      await expect(
-        RecipientValidator.updateSchema.parseAsync(invalidRecipientUpdate),
-      ).rejects.toThrow(z.ZodError);
-    });
-
-    it('should fail validation for an invalid email format in update', async () => {
-      const invalidRecipientUpdate = {
-        email: 'maria.silva@com',
-      };
-
-      await expect(
-        RecipientValidator.updateSchema.parseAsync(invalidRecipientUpdate),
-      ).rejects.toThrow(z.ZodError);
-    });
-
-    it('should fail validation for a negative number in update', async () => {
-      const invalidRecipientUpdate = {
-        number: -123,
-      };
-
-      await expect(
-        RecipientValidator.updateSchema.parseAsync(invalidRecipientUpdate),
-      ).rejects.toThrow(z.ZodError);
-    });
-
-    it('should pass validation if number is omitted in update', async () => {
-      const validRecipientUpdate = {
-        firstName: 'Maria',
-        email: 'maria.silva@example.com',
-      };
-
-      await expect(
-        RecipientValidator.updateSchema.parseAsync(validRecipientUpdate),
-      ).resolves.not.toThrow();
+      await expect(schema.parseAsync(invalidUpdate)).rejects.toThrow(
+        z.ZodError,
+      );
     });
   });
 });

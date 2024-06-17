@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { UserValidator } from '../../../../domain/validators/UserValidator';
 import { z } from 'zod';
 import { UserRole } from '../../../../domain/enums/UserRole';

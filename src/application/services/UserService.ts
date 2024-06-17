@@ -1,10 +1,11 @@
 import { inject, injectable } from 'tsyringe';
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
-import { UserValidationService } from '../../domain/validation/UserValidationService';
+import { UserValidationService } from '../../domain/validationServices/UserValidationService';
 import { User } from '../../domain/entities/User';
 import { CreateUserDto } from '../dtos/user/CreateUserDto';
 import { UpdateUserDto } from '../dtos/user/UpdateUserDto';
 import { ResponseUserDto } from '../dtos/user/ResponseUserDto';
+import { DeleteUserDto } from '../dtos/user/DeleteUserDto';
 import { UserMapper } from '../../application/mappers/UserMappers';
 import bcrypt from 'bcryptjs';
 import { UserFilter } from '../../domain/interface/UserFilter';
@@ -46,23 +47,17 @@ export class UserService {
     return this.userMapper.toResponseUserDto(updatedUser);
   }
 
-  public async deleteUser(
-    id: string,
-    loggedInUserId: string,
-    providedDeleteKey?: string,
-  ): Promise<void> {
+  public async deleteUser(deleteUserDto: DeleteUserDto): Promise<void> {
+    const { id, loggedInUserId, providedDeleteKey } = deleteUserDto;
     const user = await this.userValidationService.validateUserExistence(id);
-
     await this.userValidationService.validateDeleteSelfOperation(
       id,
       loggedInUserId,
     );
-
     await this.userValidationService.validateDeleteKeyForDefaultAdmin(
       user,
       providedDeleteKey,
     );
-
     await this.userRepository.remove(id);
   }
 

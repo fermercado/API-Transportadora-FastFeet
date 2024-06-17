@@ -1,30 +1,25 @@
 import 'reflect-metadata';
 import { RecipientService } from '../../../../application/services/RecipientService';
 import { IRecipientRepository } from '../../../../domain/repositories/IRecipientRepository';
-import { RecipientValidationService } from '../../../../domain/validation/RecipientValidationService';
+import { RecipientValidationService } from '../../../../domain/validationServices/RecipientValidationService';
 import { RecipientMapper } from '../../../../application/mappers/RecipientMapper';
 import { CreateRecipientDto } from '../../../../application/dtos/recipient/CreateRecipientDto';
 import { Recipient } from '../../../../domain/entities/Recipient';
 import { ApplicationError } from '../../../../infrastructure/shared/errors/ApplicationError';
-import { ExternalServices } from '../../../../infrastructure/externalService/ExternalService';
+import { CepValidationProvider } from '../../../../infrastructure/providers/CepValidationProvider';
+import { container } from 'tsyringe';
 
 jest.mock('../../../../domain/repositories/IRecipientRepository');
-jest.mock('../../../../domain/validation/RecipientValidationService');
+jest.mock('../../../../domain/validationServices/RecipientValidationService');
 jest.mock('../../../../application/mappers/RecipientMapper');
-jest.mock('../../../../infrastructure/externalService/ExternalService', () => {
-  return {
-    ExternalServices: {
-      getAddressByZipCode: jest.fn(),
-      getCoordinatesFromAddress: jest.fn(),
-    },
-  };
-});
+jest.mock('../../../../infrastructure/providers/CepValidationProvider');
 
 describe('RecipientService', () => {
   let recipientService: RecipientService;
   let recipientRepository: jest.Mocked<IRecipientRepository>;
   let recipientValidationService: jest.Mocked<RecipientValidationService>;
   let recipientMapper: jest.Mocked<RecipientMapper>;
+  let cepValidationProvider: jest.Mocked<CepValidationProvider>;
 
   beforeEach(() => {
     recipientRepository = {
@@ -67,13 +62,9 @@ describe('RecipientService', () => {
       longitude: 20,
     });
 
-    recipientService = new RecipientService(
-      recipientRepository,
-      recipientValidationService,
-      recipientMapper,
-    );
-
-    (ExternalServices.getAddressByZipCode as jest.Mock).mockResolvedValue({
+    cepValidationProvider =
+      new CepValidationProvider() as jest.Mocked<CepValidationProvider>;
+    cepValidationProvider.getAddressByZipCode.mockResolvedValue({
       logradouro: 'Test Street',
       bairro: 'Test Neighborhood',
       localidade: 'Test City',
@@ -81,6 +72,21 @@ describe('RecipientService', () => {
       latitude: 10,
       longitude: 20,
     });
+    cepValidationProvider.getCoordinatesFromAddress.mockResolvedValue({
+      latitude: 10,
+      longitude: 20,
+    });
+
+    container.clearInstances();
+    container.registerInstance('IRecipientRepository', recipientRepository);
+    container.registerInstance(
+      'RecipientValidationService',
+      recipientValidationService,
+    );
+    container.registerInstance('RecipientMapper', recipientMapper);
+    container.registerInstance('CepValidationProvider', cepValidationProvider);
+
+    recipientService = container.resolve(RecipientService);
   });
 
   afterEach(() => {
@@ -185,7 +191,7 @@ describe('RecipientService', () => {
         longitude: 20,
       };
 
-      (ExternalServices.getAddressByZipCode as jest.Mock).mockResolvedValue({
+      cepValidationProvider.getAddressByZipCode.mockResolvedValue({
         logradouro: '123 Main St',
         bairro: 'Central',
         localidade: 'TestCity',
@@ -216,11 +222,16 @@ describe('RecipientService', () => {
         longitude: 25,
       };
 
-      (ExternalServices.getAddressByZipCode as jest.Mock).mockResolvedValue({
+      cepValidationProvider.getAddressByZipCode.mockResolvedValue({
         logradouro: undefined,
         bairro: undefined,
         localidade: undefined,
         uf: undefined,
+        latitude: undefined,
+        longitude: undefined,
+      });
+
+      cepValidationProvider.getCoordinatesFromAddress.mockResolvedValue({
         latitude: undefined,
         longitude: undefined,
       });
@@ -391,6 +402,7 @@ describe('RecipientService', () => {
       );
     });
   });
+
   describe('deleteRecipient', () => {
     it('should delete a recipient successfully', async () => {
       const recipientId = '123';
@@ -406,6 +418,7 @@ describe('RecipientService', () => {
         existingRecipient,
       );
     });
+
     it('should throw an error if recipient not found', async () => {
       const recipientId = '123';
 
@@ -418,6 +431,7 @@ describe('RecipientService', () => {
       expect(recipientRepository.findById).toHaveBeenCalledWith(recipientId);
       expect(recipientRepository.remove).not.toHaveBeenCalled();
     });
+
     it('should handle errors when deleting a recipient', async () => {
       const recipientId = '123';
       const existingRecipient = new Recipient();
@@ -435,7 +449,8 @@ describe('RecipientService', () => {
       );
     });
   });
-  describe('findrecipientbyid', () => {
+
+  describe('findRecipientById', () => {
     it('should return a recipient if found', async () => {
       const recipientId = '123';
       const existingRecipient = new Recipient();
@@ -503,6 +518,7 @@ describe('RecipientService', () => {
       expect(recipientRepository.findById).toHaveBeenCalledWith(recipientId);
       expect(result).toBeUndefined();
     });
+
     it('should handle errors during the search', async () => {
       const recipientId = '123';
       const errorMessage = 'Database error';
@@ -516,6 +532,7 @@ describe('RecipientService', () => {
       expect(recipientRepository.findById).toHaveBeenCalledWith(recipientId);
     });
   });
+
   describe('listRecipients', () => {
     it('should return a list of recipients', async () => {
       const recipient1 = new Recipient();
@@ -548,6 +565,7 @@ describe('RecipientService', () => {
       expect(recipientRepository.find).toHaveBeenCalled();
       expect(result).toEqual([]);
     });
+
     it('should handle errors during fetching recipients', async () => {
       const errorMessage = 'Database error';
       recipientRepository.find.mockRejectedValue(new Error(errorMessage));
@@ -557,6 +575,110 @@ describe('RecipientService', () => {
       );
 
       expect(recipientRepository.find).toHaveBeenCalled();
+    });
+  });
+
+  describe('processAddressInfo', () => {
+    it('should process address information and return updated recipient data', async () => {
+      const recipientData: CreateRecipientDto = {
+        email: 'test@example.com',
+        cpf: '123.456.789-00',
+        zipCode: '16204-135',
+        firstName: 'João',
+        lastName: 'Silva',
+      };
+
+      cepValidationProvider.getAddressByZipCode.mockResolvedValue({
+        logradouro: 'Test Street',
+        bairro: 'Test Neighborhood',
+        localidade: 'Test City',
+        uf: 'TS',
+        latitude: 10,
+        longitude: 20,
+      });
+
+      cepValidationProvider.getCoordinatesFromAddress.mockResolvedValue({
+        latitude: 10,
+        longitude: 20,
+      });
+
+      const result =
+        await recipientService['processAddressInfo'](recipientData);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          ...recipientData,
+          street: 'Test Street',
+          neighborhood: 'Test Neighborhood',
+          city: 'Test City',
+          state: 'TS',
+          latitude: 10,
+          longitude: 20,
+        }),
+      );
+    });
+
+    it('should fallback to recipient data when external service provides null values', async () => {
+      const recipientData: CreateRecipientDto = {
+        email: 'test@example.com',
+        cpf: '123.456.789-00',
+        zipCode: '16204-135',
+        firstName: 'João',
+        lastName: 'Silva',
+        street: 'Original Street',
+        neighborhood: 'Original Neighborhood',
+        city: 'Original City',
+        state: 'Original State',
+        latitude: 15,
+        longitude: 25,
+      };
+
+      cepValidationProvider.getAddressByZipCode.mockResolvedValue({
+        logradouro: undefined,
+        bairro: undefined,
+        localidade: undefined,
+        uf: undefined,
+        latitude: undefined,
+        longitude: undefined,
+      });
+
+      cepValidationProvider.getCoordinatesFromAddress.mockResolvedValue({
+        latitude: undefined,
+        longitude: undefined,
+      });
+
+      const result =
+        await recipientService['processAddressInfo'](recipientData);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          ...recipientData,
+          street: 'Original Street',
+          neighborhood: 'Original Neighborhood',
+          city: 'Original City',
+          state: 'Original State',
+          latitude: 15,
+          longitude: 25,
+        }),
+      );
+    });
+
+    it('should handle unexpected errors during address processing', async () => {
+      const recipientData: CreateRecipientDto = {
+        email: 'test@example.com',
+        cpf: '123.456.789-00',
+        zipCode: '16204-135',
+        firstName: 'João',
+        lastName: 'Silva',
+      };
+
+      cepValidationProvider.getAddressByZipCode.mockRejectedValue(
+        new Error('Unexpected error processing address'),
+      );
+
+      await expect(
+        recipientService['processAddressInfo'](recipientData),
+      ).rejects.toThrow('Unexpected error processing address');
     });
   });
 });

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { cpf as cpfValidator } from 'cpf-cnpj-validator';
-import { ExternalServices } from '../../infrastructure/externalService/ExternalService';
+import { CepValidationProvider } from '../../infrastructure/providers/CepValidationProvider';
 
 export class CommonValidations {
   static createNameValidation(fieldName: string) {
@@ -38,23 +38,20 @@ export class CommonValidations {
       .refine((cpf) => cpfValidator.isValid(cpf), 'Invalid CPF');
   }
 
-  static createZipCodeValidation() {
+  static createZipCodeValidation(cepValidationProvider: CepValidationProvider) {
     return z
       .string()
-      .regex(
-        /^\d{5}-\d{3}$/,
-        'ZIP code must be in the format XXXXX-XXX and cannot be empty.',
-      )
+      .regex(/^\d{5}-\d{3}$/, 'ZIP code must be in the format XXXXX-XXX')
       .refine(
         async (zipCode) => {
           try {
-            await ExternalServices.getAddressByZipCode(zipCode);
+            await cepValidationProvider.getAddressByZipCode(zipCode);
             return true;
           } catch (error) {
             return false;
           }
         },
-        { message: 'Invalid or not found ZIP code.' },
+        { message: 'Invalid or not found ZIP code.', path: [] },
       );
   }
 }

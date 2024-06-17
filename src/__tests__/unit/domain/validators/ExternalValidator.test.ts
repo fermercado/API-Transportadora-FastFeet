@@ -1,4 +1,4 @@
-import { ExternalValidator } from '../../../../infrastructure/externalService/ExternalValidator';
+import { ExternalValidator } from '../../../../domain/validators/ExternalValidator';
 
 describe('ExternalValidator', () => {
   describe('validateCEPResponse', () => {

@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { container } from 'tsyringe';
-import { RecipientValidationService } from '../../../../domain/validation/RecipientValidationService';
+import { RecipientValidationService } from '../../../../domain/validationServices/RecipientValidationService';
 import { UniqueValidationUtils } from '../../../../infrastructure/shared/utils/uniqueValidationUtils';
 import { ApplicationError } from '../../../../infrastructure/shared/errors/ApplicationError';
 import { CreateRecipientDto } from '../../../../application/dtos/recipient/CreateRecipientDto';
@@ -8,7 +8,7 @@ import { UpdateRecipientDto } from '../../../../application/dtos/recipient/Updat
 import { IUserRepository } from '../../../../domain/repositories/IUserRepository';
 import { IRecipientRepository } from '../../../../domain/repositories/IRecipientRepository';
 import { cpf as cpfValidator } from 'cpf-cnpj-validator';
-import { ExternalServices } from '../../../../infrastructure/externalService/ExternalService';
+import { CepValidationProvider } from '../../../../infrastructure/providers/CepValidationProvider';
 
 jest.mock('../../../../infrastructure/shared/utils/uniqueValidationUtils');
 jest.mock('cpf-cnpj-validator', () => ({
@@ -16,17 +16,14 @@ jest.mock('cpf-cnpj-validator', () => ({
     isValid: jest.fn(),
   },
 }));
-jest.mock('../../../../infrastructure/externalService/ExternalService', () => ({
-  ExternalServices: {
-    getAddressByZipCode: jest.fn(),
-  },
-}));
+jest.mock('../../../../infrastructure/providers/CepValidationProvider');
 
 describe('RecipientValidationService', () => {
   let service: RecipientValidationService;
   let uniqueValidationUtilsMock: jest.Mocked<UniqueValidationUtils>;
   let userRepositoryMock: jest.Mocked<IUserRepository>;
   let recipientRepositoryMock: jest.Mocked<IRecipientRepository>;
+  let cepValidationProviderMock: jest.Mocked<CepValidationProvider>;
 
   beforeEach(() => {
     userRepositoryMock = {
@@ -44,10 +41,28 @@ describe('RecipientValidationService', () => {
       recipientRepositoryMock,
     ) as jest.Mocked<UniqueValidationUtils>;
 
+    cepValidationProviderMock = {
+      getAddressByZipCode: jest.fn().mockResolvedValue({
+        logradouro: 'Rua Exemplo',
+        bairro: 'Bairro Exemplo',
+        localidade: 'Cidade Exemplo',
+        uf: 'Estado Exemplo',
+      }),
+      getCoordinatesFromAddress: jest.fn().mockResolvedValue({
+        latitude: 0,
+        longitude: 0,
+      }),
+    } as jest.Mocked<CepValidationProvider>;
+
     container.registerInstance(
       'UniqueValidationUtils',
       uniqueValidationUtilsMock,
     );
+    container.registerInstance(
+      'CepValidationProvider',
+      cepValidationProviderMock,
+    );
+
     service = container.resolve(RecipientValidationService);
 
     jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -60,7 +75,6 @@ describe('RecipientValidationService', () => {
   describe('validateCreateData', () => {
     beforeEach(() => {
       (cpfValidator.isValid as jest.Mock).mockReturnValue(true);
-      (ExternalServices.getAddressByZipCode as jest.Mock).mockResolvedValue({});
     });
 
     it('should throw an error if validation fails', async () => {
@@ -185,7 +199,7 @@ describe('RecipientValidationService', () => {
 
   describe('validateAddressCompleteness', () => {
     beforeEach(() => {
-      (ExternalServices.getAddressByZipCode as jest.Mock).mockResolvedValue({
+      cepValidationProviderMock.getAddressByZipCode.mockResolvedValue({
         logradouro: 'Rua Exemplo',
         bairro: 'Bairro Exemplo',
         localidade: 'Cidade Exemplo',

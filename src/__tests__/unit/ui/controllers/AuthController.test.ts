@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../../../../application/services/AuthService';
 import { AuthController } from '../../../../ui/controllers/AuthController';
 import { ApplicationError } from '../../../../infrastructure/shared/errors/ApplicationError';
@@ -11,6 +11,7 @@ describe('AuthController', () => {
   let authController: AuthController;
   let req: Partial<Request>;
   let res: Partial<Response>;
+  let next: NextFunction;
   let jsonMock: jest.Mock;
 
   beforeEach(() => {
@@ -25,6 +26,7 @@ describe('AuthController', () => {
       status: jest.fn().mockReturnThis(),
       json: jsonMock,
     };
+    next = jest.fn();
   });
 
   it('should return a token and user on successful login', async () => {
@@ -42,7 +44,7 @@ describe('AuthController', () => {
 
     req.body = { cpf: '123.456.789-09', password: 'password' };
 
-    await authController.login(req as Request, res as Response);
+    await authController.login(req as Request, res as Response, next);
 
     expect(authServiceMock.authenticate).toHaveBeenCalledWith(
       '123.456.789-09',
@@ -67,17 +69,13 @@ describe('AuthController', () => {
 
     req.body = { cpf: '123.456.789-09', password: 'wrongpassword' };
 
-    await authController.login(req as Request, res as Response);
+    await authController.login(req as Request, res as Response, next);
 
     expect(authServiceMock.authenticate).toHaveBeenCalledWith(
       '123.456.789-09',
       'wrongpassword',
     );
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({
-      message: 'Invalid credentials',
-      details: errorDetails,
-    });
+    expect(next).toHaveBeenCalledWith(error);
   });
 
   it('should return an error response for ApplicationError with empty details', async () => {
@@ -87,39 +85,31 @@ describe('AuthController', () => {
 
     req.body = { cpf: '123.456.789-09', password: 'wrongpassword' };
 
-    await authController.login(req as Request, res as Response);
+    await authController.login(req as Request, res as Response, next);
 
     expect(authServiceMock.authenticate).toHaveBeenCalledWith(
       '123.456.789-09',
       'wrongpassword',
     );
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({
-      message: 'Invalid credentials',
-      details: [],
-    });
+    expect(next).toHaveBeenCalledWith(error);
   });
 
   it('should return a 500 response for unexpected errors', async () => {
-    authServiceMock.authenticate.mockRejectedValue(
-      new Error('Unexpected error'),
-    );
+    const unexpectedError = new Error('Unexpected error');
+    authServiceMock.authenticate.mockRejectedValue(unexpectedError);
 
     req.body = { cpf: '123.456.789-09', password: 'password' };
 
-    await authController.login(req as Request, res as Response);
+    await authController.login(req as Request, res as Response, next);
 
     expect(authServiceMock.authenticate).toHaveBeenCalledWith(
       '123.456.789-09',
       'password',
     );
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({
-      message: 'Internal server error',
-      error: 'An unexpected error occurred',
-      details: [
+    expect(next).toHaveBeenCalledWith(
+      new ApplicationError('Failed to authenticate user', 500, true, [
         { key: 'unexpectedError', value: 'No specific details available' },
-      ],
-    });
+      ]),
+    );
   });
 });
