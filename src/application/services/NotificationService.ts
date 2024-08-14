@@ -16,6 +16,7 @@ export class NotificationService {
         order.recipient.email,
         order.recipient.firstName,
         order.status,
+        order.trackingCode,
       );
     } catch (error) {
       console.error('Failed to send status notification:', error);
