@@ -5,6 +5,7 @@ import recipientRoutes from './ui/routes/recipientRoutes';
 import orderRoutes from './ui/routes/orderRoutes';
 import deliveryRoutes from './ui/routes/deliveryRoutes';
 import authRoutes from './ui/routes/authRoutes';
+import trackingRoutes from './ui/routes/trackingRoutes';
 import { errorHandler } from './ui/middleware/ErrorHandler';
 import setupSwagger from './swagger';
 
@@ -27,6 +28,7 @@ export function createApp(): Express {
 
   setupSwagger(app);
 
+  app.use(trackingRoutes);
   app.use(authRoutes);
   app.use(userRoutes);
   app.use(recipientRoutes);

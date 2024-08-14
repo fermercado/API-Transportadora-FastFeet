@@ -15,6 +15,7 @@ import { OrderMapper } from '../mappers/OrderMapper';
 import { OrderFilter } from '../../domain/interface/OrderFilter';
 import { TrackingCodeService } from '../services/TrackingCodeService';
 import { NotificationService } from '../services/NotificationService';
+import { OrderStatusMapper } from '../mappers/OrderStatusMapper';
 
 @injectable()
 export class OrderService {
@@ -159,5 +160,15 @@ export class OrderService {
 
   private async notifyStatusChange(order: Order) {
     await this.notificationService.notifyStatusChange(order);
+  }
+
+  public async getOrderStatusByTrackingCode(
+    trackingCode: string,
+  ): Promise<any> {
+    const order = await this.orderRepository.findByTrackingCode(trackingCode);
+    if (!order) {
+      throw new Error('Order not found');
+    }
+    return OrderStatusMapper.toDto(order);
   }
 }
