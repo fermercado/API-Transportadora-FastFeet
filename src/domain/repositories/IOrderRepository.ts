@@ -7,6 +7,7 @@ export interface IOrderRepository {
   find(): Promise<Order[]>;
   findById(id: string): Promise<Order | undefined>;
   findByFilter(filter: OrderFilter): Promise<Order[]>;
+  findByTrackingCode(trackingCode: string): Promise<Order | null>;
   save(order: Order): Promise<Order>;
   remove(id: string): Promise<void>;
 }
