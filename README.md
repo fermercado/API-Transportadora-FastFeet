@@ -447,6 +447,20 @@ Este projeto requer que todos os dados fornecidos sejam válidos. Para ajudar a 
 - **Parâmetros de Caminho:**
   - `id`: ID do pedido.
 
+#### 🔍 Rastrear Pedido
+
+- **Endpoint:** `/api/v1/orders/track`
+- **Método:** GET
+- **Descrição:** Rastreia o status de um pedido utilizando o código de rastreamento (tracking code).
+- **Parâmetros de Caminho:**
+  ```json
+  {
+  "trackingCode": "string"
+  }
+  ```
+  **Nota:** O código de rastreamento é gerado automaticamente e será enviado ao email do destinatário junto com a notificação.
+  ```
+
 ### 📦 Entregas / Delivery
 
 #### 📄 Listar Entregas para um Entregador
