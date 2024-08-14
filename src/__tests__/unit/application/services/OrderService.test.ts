@@ -14,6 +14,8 @@ import { Order } from '../../../../domain/entities/Order';
 import { DataSource } from 'typeorm';
 import ImageUploadService from '../../../../infrastructure/service/ImageUploadService';
 import { DeliveryNotificationService } from '../../../../application/services/DeliveryNotificationService';
+import { OrderStatusMapper } from '../../../../application/mappers/OrderStatusMapper';
+import { Recipient } from '../../../../domain/entities/Recipient';
 
 const createMockOrder = (): Order => ({
   id: 'order-id',
@@ -75,6 +77,7 @@ describe('OrderService', () => {
       findByFilter: jest.fn(),
       save: jest.fn(),
       remove: jest.fn(),
+      findByTrackingCode: jest.fn(),
     } as jest.Mocked<IOrderRepository>;
 
     orderValidationServiceMock = {
@@ -802,6 +805,45 @@ describe('OrderService', () => {
           distance: '10 km',
         },
       ]);
+    });
+  });
+  describe('getOrderStatusByTrackingCode', () => {
+    it('should return order status DTO when a valid tracking code is provided', async () => {
+      const mockOrder: Order = {
+        id: '1',
+        trackingCode: 'valid-tracking-code',
+        status: OrderStatus.Delivered,
+        createdAt: new Date(),
+        awaitingPickupAt: new Date(),
+        pickedUpAt: new Date(),
+        deliveredAt: new Date(),
+        returnedAt: undefined,
+        updatedAt: new Date(),
+        recipient: new Recipient(),
+      };
+      orderRepositoryMock.findByTrackingCode.mockResolvedValue(mockOrder);
+
+      const expectedDto = OrderStatusMapper.toDto(mockOrder);
+      const result = await orderService.getOrderStatusByTrackingCode(
+        'valid-tracking-code',
+      );
+
+      expect(orderRepositoryMock.findByTrackingCode).toHaveBeenCalledWith(
+        'valid-tracking-code',
+      );
+      expect(result).toEqual(expectedDto);
+    });
+
+    it('should throw an error if the tracking code does not match any order', async () => {
+      orderRepositoryMock.findByTrackingCode.mockResolvedValue(null);
+
+      await expect(
+        orderService.getOrderStatusByTrackingCode('invalid-tracking-code'),
+      ).rejects.toThrow('Order not found');
+
+      expect(orderRepositoryMock.findByTrackingCode).toHaveBeenCalledWith(
+        'invalid-tracking-code',
+      );
     });
   });
 });
