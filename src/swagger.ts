@@ -17,6 +17,7 @@ const options = {
     },
   },
   apis: [
+    './src/docs/swagger/paths/tracking-api.yaml',
     './src/docs/swagger/paths/login-api.yaml',
     './src/docs/swagger/paths/user-api.yaml',
     './src/docs/swagger/paths/recipient-api.yaml',

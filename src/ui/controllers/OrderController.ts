@@ -295,4 +295,32 @@ export class OrderController {
       );
     }
   }
+
+  async getOrderStatusByTracking(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const { trackingCode } = req.query;
+
+      if (!trackingCode) {
+        throw new ApplicationError('Tracking code must be provided', 400, true);
+      }
+
+      const orderStatus = await this.orderService.getOrderStatusByTrackingCode(
+        trackingCode as string,
+      );
+
+      res.status(200).json(orderStatus);
+    } catch (error: any) {
+      next(
+        error instanceof ApplicationError
+          ? error
+          : new ApplicationError('Failed to retrieve order status', 500, true, [
+              { key: 'internal', value: error.message },
+            ]),
+      );
+    }
+  }
 }

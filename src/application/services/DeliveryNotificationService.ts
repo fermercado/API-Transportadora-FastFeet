@@ -10,18 +10,17 @@ export class DeliveryNotificationService {
     destinatarioEmail: string,
     nomeDestinatario: string,
     status: string,
+    trackingCode: string,
   ) {
     const mensagem = translateStatus(status);
     const assunto = 'Atualização do Status da Sua Encomenda';
-    const conteudoHtml = `
-      <html>
-      <body>
-        <p>Olá, ${nomeDestinatario}!</p>
-        <p>${mensagem}</p>
-      </body>
-      </html>
-    `;
 
-    await this.emailService.sendMail(destinatarioEmail, assunto, conteudoHtml);
+    await this.emailService.sendStatusUpdateMail(
+      destinatarioEmail,
+      assunto,
+      nomeDestinatario,
+      mensagem,
+      trackingCode,
+    );
   }
 }

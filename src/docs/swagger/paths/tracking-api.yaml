@@ -1,0 +1,125 @@
+openapi: 3.0.0
+info:
+  title: Order Tracking API
+  description: API for tracking order status
+  version: 1.0.0
+paths:
+  /api/v1/orders/track:
+    get:
+      summary: Get order status by tracking code
+      tags:
+        - Tracking
+      parameters:
+        - name: trackingCode
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The tracking code of the order.
+      responses:
+        '200':
+          description: Order found, returns order status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  trackingCode:
+                    type: string
+                    description: Tracking code of the order
+                  statusHistory:
+                    type: array
+                    description: List of previous statuses of the order
+                    items:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                          description: Status of the order at a specific time
+                        message:
+                          type: string
+                          description: Description of the status
+                        date:
+                          type: string
+                          format: date-time
+                          description: Date and time when the status was recorded
+                  currentStatus:
+                    type: object
+                    description: The current status of the order
+                    properties:
+                      status:
+                        type: string
+                        description: Current status of the order
+                      message:
+                        type: string
+                        description: Description of the current status
+                      date:
+                        type: string
+                        format: date-time
+                        description: Date and time of the current status
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Order not found'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Internal server error'
+                  error:
+                    type: string
+                    example: 'An unexpected error occurred'
+
+components:
+  schemas:
+    Recipient:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the recipient
+        firstName:
+          type: string
+          description: First name of the recipient
+        lastName:
+          type: string
+          description: Last name of the recipient
+        email:
+          type: string
+          description: Email address of the recipient
+        zipCode:
+          type: string
+          description: Zip code of the recipient
+        complement:
+          type: string
+          description: Address complement of the recipient
+        number:
+          type: integer
+          description: Address number of the recipient
+
+    Deliveryman:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the deliveryman
+        firstName:
+          type: string
+          description: First name of the deliveryman
+        lastName:
+          type: string
+          description: Last name of the deliveryman
+        email:
+          type: string
+          description: Email address of the deliveryman

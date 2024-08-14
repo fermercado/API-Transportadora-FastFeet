@@ -242,4 +242,35 @@ describe('OrderRepository', () => {
 
     expect(mockRepository.delete).toHaveBeenCalledWith('1');
   });
+  describe('findByTrackingCode', () => {
+    it('should find an order by tracking code', async () => {
+      const order = {
+        ...orderData,
+        id: '1',
+        trackingCode: 'TRACK123',
+      } as Order;
+      mockRepository.findOne.mockResolvedValue(order);
+
+      const result = await orderRepository.findByTrackingCode('TRACK123');
+
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { trackingCode: 'TRACK123' },
+        relations: ['recipient', 'deliveryman'],
+      });
+      expect(result).toEqual(order);
+    });
+
+    it('should return null if no order is found with the provided tracking code', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+
+      const result =
+        await orderRepository.findByTrackingCode('NON_EXISTENT_CODE');
+
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { trackingCode: 'NON_EXISTENT_CODE' },
+        relations: ['recipient', 'deliveryman'],
+      });
+      expect(result).toBeNull();
+    });
+  });
 });

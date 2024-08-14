@@ -18,7 +18,24 @@ export class EmailService {
     });
   }
 
-  async sendMail(to: string, subject: string, html: string) {
+  async sendStatusUpdateMail(
+    to: string,
+    subject: string,
+    name: string,
+    status: string,
+    trackingCode: string,
+  ) {
+    const html = `
+      <!doctype html>
+      <html>
+        <body>
+          <p>Olá, ${name}!</p>
+          <p><strong>${status}</strong>.</p>
+          <p>Seu código de rastreamento é: <strong id="trackingCode">${trackingCode}</strong></p>
+        </body>
+      </html>
+    `;
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to,

@@ -10,10 +10,10 @@ jest.mock('../../../../infrastructure/service/EmailService');
 describe('NotificationService', () => {
   let notificationService: NotificationService;
   let deliveryNotificationServiceMock: jest.Mocked<DeliveryNotificationService>;
-  let emailServiceMock: jest.Mocked<EmailService>;
 
   beforeEach(() => {
-    emailServiceMock = new EmailService() as jest.Mocked<EmailService>;
+    const emailServiceMock: jest.Mocked<EmailService> =
+      new EmailService() as jest.Mocked<EmailService>;
     deliveryNotificationServiceMock = new DeliveryNotificationService(
       emailServiceMock,
     ) as jest.Mocked<DeliveryNotificationService>;
@@ -37,6 +37,7 @@ describe('NotificationService', () => {
         firstName: 'João',
       },
       status: 'delivered',
+      trackingCode: '12345ABC',
     } as Order;
 
     await notificationService.notifyStatusChange(order);
@@ -53,13 +54,19 @@ describe('NotificationService', () => {
         firstName: 'João',
       },
       status: 'delivered',
+      trackingCode: '12345ABC',
     } as Order;
 
     await notificationService.notifyStatusChange(order);
 
     expect(
       deliveryNotificationServiceMock.sendStatusUpdateEmail,
-    ).toHaveBeenCalledWith('example@example.com', 'João', 'delivered');
+    ).toHaveBeenCalledWith(
+      'example@example.com',
+      'João',
+      'delivered',
+      '12345ABC',
+    );
   });
 
   it('should handle errors when sending notification', async () => {
@@ -69,6 +76,7 @@ describe('NotificationService', () => {
         firstName: 'João',
       },
       status: 'delivered',
+      trackingCode: '12345ABC',
     } as Order;
 
     deliveryNotificationServiceMock.sendStatusUpdateEmail.mockRejectedValue(
@@ -85,7 +93,12 @@ describe('NotificationService', () => {
 
     expect(
       deliveryNotificationServiceMock.sendStatusUpdateEmail,
-    ).toHaveBeenCalledWith('example@example.com', 'João', 'delivered');
+    ).toHaveBeenCalledWith(
+      'example@example.com',
+      'João',
+      'delivered',
+      '12345ABC',
+    );
 
     consoleErrorSpy.mockRestore();
   });

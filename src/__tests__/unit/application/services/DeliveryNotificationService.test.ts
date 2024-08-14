@@ -12,6 +12,7 @@ describe('DeliveryNotificationService', () => {
 
   beforeEach(() => {
     emailServiceMock = new EmailService() as jest.Mocked<EmailService>;
+    emailServiceMock.sendStatusUpdateMail = jest.fn();
     deliveryNotificationService = new DeliveryNotificationService(
       emailServiceMock,
     );
@@ -25,6 +26,7 @@ describe('DeliveryNotificationService', () => {
     const destinatarioEmail = 'example@example.com';
     const nomeDestinatario = 'João Silva';
     const status = 'delivered';
+    const trackingCode = 'TRACK123';
     const translatedMessage = 'Your package has been delivered';
 
     (translateStatus as jest.Mock).mockReturnValue(translatedMessage);
@@ -33,22 +35,17 @@ describe('DeliveryNotificationService', () => {
       destinatarioEmail,
       nomeDestinatario,
       status,
+      trackingCode,
     );
 
     const expectedSubject = 'Atualização do Status da Sua Encomenda';
-    const expectedHtmlContent = `
-      <html>
-      <body>
-        <p>Olá, ${nomeDestinatario}!</p>
-        <p>${translatedMessage}</p>
-      </body>
-      </html>
-    `;
 
-    expect(emailServiceMock.sendMail).toHaveBeenCalledWith(
+    expect(emailServiceMock.sendStatusUpdateMail).toHaveBeenCalledWith(
       destinatarioEmail,
       expectedSubject,
-      expectedHtmlContent,
+      nomeDestinatario,
+      translatedMessage,
+      trackingCode,
     );
     expect(translateStatus).toHaveBeenCalledWith(status);
   });
@@ -57,10 +54,12 @@ describe('DeliveryNotificationService', () => {
     const destinatarioEmail = 'example@example.com';
     const nomeDestinatario = 'João Silva';
     const status = 'delivered';
+    const trackingCode = 'TRACK123';
     const translatedMessage = 'Your package has been delivered';
+    const expectedSubject = 'Atualização do Status da Sua Encomenda';
 
     (translateStatus as jest.Mock).mockReturnValue(translatedMessage);
-    emailServiceMock.sendMail.mockRejectedValue(
+    emailServiceMock.sendStatusUpdateMail.mockRejectedValue(
       new Error('Failed to send email'),
     );
 
@@ -69,10 +68,17 @@ describe('DeliveryNotificationService', () => {
         destinatarioEmail,
         nomeDestinatario,
         status,
+        trackingCode,
       ),
     ).rejects.toThrow('Failed to send email');
 
     expect(translateStatus).toHaveBeenCalledWith(status);
-    expect(emailServiceMock.sendMail).toHaveBeenCalled();
+    expect(emailServiceMock.sendStatusUpdateMail).toHaveBeenCalledWith(
+      destinatarioEmail,
+      expectedSubject,
+      nomeDestinatario,
+      translatedMessage,
+      trackingCode,
+    );
   });
 });
