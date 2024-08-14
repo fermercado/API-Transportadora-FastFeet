@@ -40,6 +40,13 @@ export class OrderRepository implements IOrderRepository {
     return order ?? undefined;
   }
 
+  public async findByTrackingCode(trackingCode: string): Promise<Order | null> {
+    return this.ormRepository.findOne({
+      where: { trackingCode },
+      relations: ['recipient', 'deliveryman'],
+    });
+  }
+
   public async findByFilter(filter: OrderFilter): Promise<Order[]> {
     const query = this.ormRepository
       .createQueryBuilder('order')
