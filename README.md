@@ -455,11 +455,15 @@ Este projeto requer que todos os dados fornecidos sejam válidos. Para ajudar a 
 - **Parâmetros de Caminho:**
   ```json
   {
-  "trackingCode": "string"
+    "trackingCode": "string"
   }
   ```
-  **Nota:** O código de rastreamento é gerado automaticamente e será enviado ao email do destinatário junto com a notificação.
-  ```
+
+[Rastreamento Fast Feet](https://api-transportadora-fastfeet.onrender.com/api-docs/#/Tracking/get_api_v1_orders_track)
+
+```
+**Nota:** O código de rastreamento é gerado automaticamente e será enviado ao email do destinatário junto com a notificação.
+```
 
 ### 📦 Entregas / Delivery
 
