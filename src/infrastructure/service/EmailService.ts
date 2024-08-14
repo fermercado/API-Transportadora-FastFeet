@@ -32,6 +32,7 @@ export class EmailService {
           <p>Olá, ${name}!</p>
           <p><strong>${status}</strong>.</p>
           <p>Seu código de rastreamento é: <strong id="trackingCode">${trackingCode}</strong></p>
+          <p><a href="https://api-transportadora-fastfeet.onrender.com/api-docs/#/Tracking/get_api_v1_orders_track" target="_blank">Rastreamento Fast Feet</a></p>
         </body>
       </html>
     `;
