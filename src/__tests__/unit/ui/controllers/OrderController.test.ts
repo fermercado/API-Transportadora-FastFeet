@@ -759,4 +759,62 @@ describe('OrderController', () => {
       );
     });
   });
+  describe('getOrderStatusByTracking', () => {
+    it('should return order status by tracking code', async () => {
+      const mockOrderStatus = {
+        trackingCode: '123',
+        currentStatus: 'Delivered',
+        statusHistory: [{ status: 'Shipped', date: '2020-01-01' }],
+      };
+
+      mockOrderService.getOrderStatusByTrackingCode.mockResolvedValue(
+        mockOrderStatus,
+      );
+      mockRequest.query = { trackingCode: '123' };
+
+      await orderController.getOrderStatusByTracking(
+        mockRequest as Request,
+        mockResponse as Response,
+        next,
+      );
+
+      expect(
+        mockOrderService.getOrderStatusByTrackingCode,
+      ).toHaveBeenCalledWith('123');
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(mockOrderStatus);
+    });
+
+    it('should throw an error if tracking code is missing', async () => {
+      mockRequest.query = {};
+
+      await orderController.getOrderStatusByTracking(
+        mockRequest as Request,
+        mockResponse as Response,
+        next,
+      );
+
+      expect(next).toHaveBeenCalledWith(
+        new ApplicationError('Tracking code must be provided', 400, true),
+      );
+    });
+
+    it('should handle errors when fetching order status by tracking code', async () => {
+      const error = new Error('Error fetching status');
+      mockOrderService.getOrderStatusByTrackingCode.mockRejectedValue(error);
+      mockRequest.query = { trackingCode: '123' };
+
+      await orderController.getOrderStatusByTracking(
+        mockRequest as Request,
+        mockResponse as Response,
+        next,
+      );
+
+      expect(next).toHaveBeenCalledWith(
+        new ApplicationError('Failed to retrieve order status', 500, true, [
+          { key: 'internal', value: error.message },
+        ]),
+      );
+    });
+  });
 });
