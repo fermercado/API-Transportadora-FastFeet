@@ -20,7 +20,8 @@ export const translateStatus = (statusKey: string): string => {
     console.log(
       `Status '${statusKey}' não encontrado. Verifique se o valor corresponde exatamente aos valores do enum.`,
     );
+    return 'Status desconhecido.';
   }
 
-  return status ? statusToRecipientMessage[status] : 'Status desconhecido.';
+  return statusToRecipientMessage[status];
 };
